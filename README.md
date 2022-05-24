@@ -5,6 +5,6 @@
 # `pocketsmith-go`
 
 ```diff
-+ A Go abstraction over the Pocketsmith API:
++ 📚 A Go abstraction over the Pocketsmith API:
 + https://developers.pocketsmith.com/docs.
 ```
