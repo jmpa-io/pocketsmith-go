@@ -1,11 +1,11 @@
 package pocketsmith
 
 import (
+	"fmt"
 	"net/http"
 
-	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/prometheus/common/promlog"
+	// TODO add this log level: https://github.com/rs/zerolog
 )
 
 // An iHttpClient is an interface over http.Client.
@@ -21,7 +21,7 @@ type Client struct {
 	endpoint   string // the endpoint to query against.
 
 	// misc.
-	logger log.Logger
+	logger *ze.Logger
 
 	// metadata.
 	user *User // the authed user attached to the token.
@@ -38,7 +38,7 @@ func New(token string, options ...Option) (*Client, error) {
 
 	// default client.
 	c := &Client{
-		logLevel:   LogLevelError,
+		logLevel:   LogLevelDebug,
 		httpClient: http.DefaultClient,
 		endpoint:   "https://api.pocketsmith.com/v2",
 	}
@@ -66,12 +66,25 @@ func New(token string, options ...Option) (*Client, error) {
 	c.headers = headers
 
 	// setup logger.
-	config := promlog.AllowedLevel{}
-	if err := config.Set(c.logLevel.String()); err != nil {
-		return nil, ErrFailedLoggerSetup{err}
+	lvl, err := zap.ParseAtomicLevel(c.logLevel)
+	if err != nil {
+		return nil, err
 	}
-	c.logger = promlog.New(&promlog.Config{Level: &config})
+	logger := zap.New()
+	logger.WithOptions()
+	l := zap.NewZapSugarLogger(nil, lvl)
+	if err != nil {
+		return nil, err
+	}
+	l.Log("hello")
+	// c.logger = l.Sugar()
+	// config := promlog.AllowedLevel{}
+	// if err := config.Set(c.logLevel.String()); err != nil {
+	// 	return nil, ErrFailedLoggerSetup{err}
+	// }
+	// c.logger = promlog.New(&promlog.Config{Level: &config})
 
+	fmt.Println(c.logLevel)
 	_ = level.Debug(c.logger).Log("msg", "setup client successfully")
 	return c, nil
 }
