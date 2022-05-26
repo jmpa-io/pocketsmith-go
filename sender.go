@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"reflect"
 
 	"github.com/go-kit/kit/log/level"
 )
@@ -29,7 +28,7 @@ func (c *Client) sender(cr clientRequest, result interface{}) (*http.Response, e
 
 	// marshal body.
 	var body []byte
-	if !reflect.ValueOf(cr.data).IsNil() {
+	if !isNil(cr.data) {
 		b, err := json.Marshal(cr.data)
 		if err != nil {
 			return nil, ErrFailedMarshal{err}
