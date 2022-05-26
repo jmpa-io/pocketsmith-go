@@ -5,6 +5,7 @@ package pocketsmith
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -29,6 +30,7 @@ func (c *Client) sender(cr clientRequest, result interface{}) (*http.Response, e
 	// marshal body.
 	var body []byte
 	if !isNil(cr.data) {
+		fmt.Println(cr.data)
 		b, err := json.Marshal(cr.data)
 		if err != nil {
 			return nil, ErrFailedMarshal{err}
