@@ -1,10 +1,10 @@
 package pocketsmith
 
 import (
-	"fmt"
 	"net/http"
+	"os"
 
-	"github.com/go-kit/kit/log/level"
+	"github.com/rs/zerolog"
 	// TODO add this log level: https://github.com/rs/zerolog
 )
 
@@ -21,7 +21,7 @@ type Client struct {
 	endpoint   string // the endpoint to query against.
 
 	// misc.
-	logger *ze.Logger
+	logger zerolog.Logger
 
 	// metadata.
 	user *User // the authed user attached to the token.
@@ -50,12 +50,25 @@ func New(token string, options ...Option) (*Client, error) {
 		}
 	}
 
-	// retrieve authed user, to determine if the token is valid.
-	user, err := c.GetAuthedUser()
-	if err != nil {
-		return nil, err
+	// setup logger.
+	zerolog.MessageFieldName = "msg"
+	var level zerolog.Level
+	switch c.logLevel {
+	case LogLevelDebug:
+		level = zerolog.DebugLevel
+	case LogLevelInfo:
+		level = zerolog.InfoLevel
+	case LogLevelWarn:
+		level = zerolog.WarnLevel
+	case LogLevelError:
+		level = zerolog.ErrorLevel
+	default:
+		level = zerolog.ErrorLevel
 	}
-	c.user = user
+	c.logger = zerolog.New(os.Stderr).
+		With().Caller().Logger().
+		With().Timestamp().Logger().Level(level)
+	c.logger.Debug().Msg("setting up client")
 
 	// setup headers.
 	headers := make(http.Header)
@@ -65,26 +78,13 @@ func New(token string, options ...Option) (*Client, error) {
 	headers.Set("Accept-Charset", "utf-8")    // TODO is this needed?
 	c.headers = headers
 
-	// setup logger.
-	lvl, err := zap.ParseAtomicLevel(c.logLevel)
+	// retrieve authed user, to determine if the token is valid.
+	user, err := c.GetAuthedUser()
 	if err != nil {
 		return nil, err
 	}
-	logger := zap.New()
-	logger.WithOptions()
-	l := zap.NewZapSugarLogger(nil, lvl)
-	if err != nil {
-		return nil, err
-	}
-	l.Log("hello")
-	// c.logger = l.Sugar()
-	// config := promlog.AllowedLevel{}
-	// if err := config.Set(c.logLevel.String()); err != nil {
-	// 	return nil, ErrFailedLoggerSetup{err}
-	// }
-	// c.logger = promlog.New(&promlog.Config{Level: &config})
+	c.user = user
 
-	fmt.Println(c.logLevel)
-	_ = level.Debug(c.logger).Log("msg", "setup client successfully")
+	c.logger.Debug().Msg("client setup successfully")
 	return c, nil
 }
