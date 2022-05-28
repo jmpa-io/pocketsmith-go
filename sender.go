@@ -5,11 +5,8 @@ package pocketsmith
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net/http"
-
-	"github.com/go-kit/kit/log/level"
 )
 
 // clientRequest simplifies sending a given request to the API by the sender.
@@ -30,7 +27,6 @@ func (c *Client) sender(cr clientRequest, result interface{}) (*http.Response, e
 	// marshal body.
 	var body []byte
 	if !isNil(cr.data) {
-		fmt.Println(cr.data)
 		b, err := json.Marshal(cr.data)
 		if err != nil {
 			return nil, ErrFailedMarshal{err}
@@ -59,8 +55,10 @@ func (c *Client) sender(cr clientRequest, result interface{}) (*http.Response, e
 	if err != nil {
 		return nil, ErrSenderFailedParseResponse{err}
 	}
-	_ = level.Debug(c.logger).Log("msg", "response from API",
-		"code", resp.StatusCode, "body", string(body))
+	c.logger.Debug().
+		Int("code", resp.StatusCode).
+		Str("body", string(b)).
+		Msg("response from API")
 
 	// was this a valid request to the API?
 	if http.StatusOK <= resp.StatusCode && resp.StatusCode < http.StatusMultipleChoices {
