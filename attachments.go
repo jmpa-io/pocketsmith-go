@@ -38,7 +38,7 @@ type CreateAttachmentOptions struct {
 
 // CreateAttachment, using the given user id, creates an attachment for a user.
 // https://developers.pocketsmith.com/reference#post_users-id-attachments
-func (c *Client) CreateAttachment(userId int, options CreateAttachmentOptions) (attachment *Attachment, err error) {
+func (c *Client) CreateAttachment(userId int, options *CreateAttachmentOptions) (attachment *Attachment, err error) {
 	cr := clientRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/users/%v/attachments", userId),
@@ -50,7 +50,7 @@ func (c *Client) CreateAttachment(userId int, options CreateAttachmentOptions) (
 
 // CreateAttachmentForAuthedUser, using the token attached to the client,
 // creates an attachment for the authed user.
-func (c *Client) CreateAttachmentForAuthedUser(options CreateAttachmentOptions) (*Attachment, error) {
+func (c *Client) CreateAttachmentForAuthedUser(options *CreateAttachmentOptions) (*Attachment, error) {
 	return c.CreateAttachment(c.user.ID, options)
 }
 
@@ -72,7 +72,7 @@ type ListAttachmentsOptions struct {
 
 // ListAttachments, using the given user id, lists the attachments for a user.
 // https://developers.pocketsmith.com/reference#get_users-id-attachments
-func (c *Client) ListAttachments(userId int, options ListAttachmentsOptions) ([]Attachment, error) {
+func (c *Client) ListAttachments(userId int, options *ListAttachmentsOptions) ([]Attachment, error) {
 	cr := clientRequest{
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/users/%v/attachments", userId),
@@ -85,7 +85,7 @@ func (c *Client) ListAttachments(userId int, options ListAttachmentsOptions) ([]
 
 // ListAttachmentsForAuthedUser, using the token attached to the client, lists
 // the attachment for the authed user.
-func (c *Client) ListAttachmentsForAuthedUser(options ListAttachmentsOptions) ([]Attachment, error) {
+func (c *Client) ListAttachmentsForAuthedUser(options *ListAttachmentsOptions) ([]Attachment, error) {
 	return c.ListAttachments(c.user.ID, options)
 }
 
@@ -98,7 +98,7 @@ type AssignAttachmentToTransactionOptions struct {
 
 // AssignAttachmentToTransaction assigns an attachment to a transaction.
 // https://developers.pocketsmith.com/reference#post_transactions-id-attachments
-func (c *Client) AssignAttachmentToTransaction(options AssignAttachmentToTransactionOptions) (*Attachment, error) {
+func (c *Client) AssignAttachmentToTransaction(options *AssignAttachmentToTransactionOptions) (*Attachment, error) {
 	cr := clientRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/transactions/%v/attachments", options.TransactionID),

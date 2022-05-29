@@ -34,7 +34,7 @@ type CreateAccountOptions struct {
 
 // CreateAccount, using the given user id, creates an account for a user.
 // https://developers.pocketsmith.com/reference#post_users-id-accounts
-func (c *Client) CreateAccount(userId int, options CreateAccountOptions) (*Account, error) {
+func (c *Client) CreateAccount(userId int, options *CreateAccountOptions) (*Account, error) {
 	cr := clientRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/users/%v/accounts", userId),
@@ -47,7 +47,7 @@ func (c *Client) CreateAccount(userId int, options CreateAccountOptions) (*Accou
 
 // CreateAccountForAuthedUser, using the token attached to the client, creates
 // an account for the authed user.
-func (c *Client) CreateAccountForAuthedUser(options CreateAccountOptions) (*Account, error) {
+func (c *Client) CreateAccountForAuthedUser(options *CreateAccountOptions) (*Account, error) {
 	return c.CreateAccount(c.user.ID, options)
 }
 

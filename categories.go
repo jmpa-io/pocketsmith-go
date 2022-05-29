@@ -32,7 +32,7 @@ type CreateCategoryOptions struct {
 
 // CreateCategory, using the given user id, creates a category for a user.
 // https://developers.pocketsmith.com/reference/post_users-id-categories-1
-func (c *Client) CreateCategory(userId int, options CreateCategoryOptions) error {
+func (c *Client) CreateCategory(userId int, options *CreateCategoryOptions) error {
 	cr := clientRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/users/%v/categories", userId),
@@ -44,7 +44,7 @@ func (c *Client) CreateCategory(userId int, options CreateCategoryOptions) error
 
 // CreateCategoryForAuthedUser, using the token attached to a client, creates a
 // category for the authed user.
-func (c *Client) CreateCategoryForAuthedUser(options CreateCategoryOptions) error {
+func (c *Client) CreateCategoryForAuthedUser(options *CreateCategoryOptions) error {
 	return c.CreateCategory(c.user.ID, options)
 }
 
