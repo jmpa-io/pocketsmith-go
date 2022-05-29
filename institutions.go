@@ -24,7 +24,7 @@ type CreateInstitutionOptions struct {
 
 // CreateInstitution, using the given user id, creates an institution for a user.
 // https://developers.pocketsmith.com/reference#post_users-id-institutions
-func (c *Client) CreateInstitution(userId int, options CreateInstitutionOptions) (*Institution, error) {
+func (c *Client) CreateInstitution(userId int, options *CreateInstitutionOptions) (*Institution, error) {
 	cr := clientRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/users/%v/institutions", userId),
@@ -37,8 +37,25 @@ func (c *Client) CreateInstitution(userId int, options CreateInstitutionOptions)
 
 // CreateInstitutionForAuthedUser, using the token attached to the client,
 // creates an institution for the authed user.
-func (c *Client) CreateInstitutionForAuthedUser(options CreateInstitutionOptions) (*Institution, error) {
+func (c *Client) CreateInstitutionForAuthedUser(options *CreateInstitutionOptions) (*Institution, error) {
 	return c.CreateInstitution(c.user.ID, options)
+}
+
+// DeleteInstitutionOptions defines the options for deleteing an institution.
+type DeleteInstitutionOptions struct {
+	MergeIntoInstitutionId int
+}
+
+// DeleteInstitution, using the given institution id, creates an institution.
+// https://developers.pocketsmith.com/reference/delete_institutions-id-1
+func (c *Client) DeleteInstitution(institutionId int, options *DeleteInstitutionOptions) error {
+	cr := clientRequest{
+		method: http.MethodDelete,
+		path:   fmt.Sprintf("/institutions/%v", institutionId),
+		data:   options,
+	}
+	_, err := c.sender(cr, nil)
+	return err
 }
 
 // ListInstitutions, using the given user id, list the institutions for a user.

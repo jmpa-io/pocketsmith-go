@@ -47,7 +47,7 @@ type UpdateTransactionOptions struct {
 
 // UpdateTransaction updates a PocketSmith transaction.
 // https://developers.pocketsmith.com/reference#put_transactions-id
-func (c *Client) UpdateTransaction(options UpdateTransactionOptions) (Transaction, error) {
+func (c *Client) UpdateTransaction(options *UpdateTransactionOptions) (Transaction, error) {
 	cr := clientRequest{
 		method: http.MethodPut,
 		path:   fmt.Sprintf("/transactions/%v", options.ID),

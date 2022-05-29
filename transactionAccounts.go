@@ -62,7 +62,7 @@ type CreateTransactionAccountTransactionOptions struct {
 // CreateTransactionAccountTransaction, using the given account id, creates a
 // a transaction in an transaction account.
 // https://developers.pocketsmith.com/reference#post_transaction-accounts-id-transactions
-func (c *Client) CreateTransactionAccountTransaction(accountId int, options CreateTransactionAccountTransactionOptions) (*Transaction, error) {
+func (c *Client) CreateTransactionAccountTransaction(accountId int, options *CreateTransactionAccountTransactionOptions) (*Transaction, error) {
 	cr := clientRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/transaction_accounts/%v/transactions", accountId),
@@ -85,7 +85,7 @@ type ListTransactionAccountTransactionsOptions struct {
 // ListTransactionAccountTransactions, using the given account id, lists the
 // transactions for a transaction account.
 // https://developers.pocketsmith.com/reference#get_transaction-accounts-id-transactions
-func (c *Client) ListTransactionAccountTransactions(accountId int, options ListTransactionAccountTransactionsOptions) ([]Transaction, error) {
+func (c *Client) ListTransactionAccountTransactions(accountId int, options *ListTransactionAccountTransactionsOptions) ([]Transaction, error) {
 	var transactions []Transaction
 	cr := clientRequest{
 		method: http.MethodGet,
