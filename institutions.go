@@ -31,7 +31,7 @@ func (c *Client) CreateInstitution(userId int, options *CreateInstitutionOptions
 		data:   options,
 	}
 	var institution *Institution
-	_, err := c.sender(cr, institution)
+	_, err := c.sender(cr, &institution)
 	return institution, err
 }
 
