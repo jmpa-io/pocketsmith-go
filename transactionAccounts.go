@@ -57,6 +57,7 @@ type CreateTransactionAccountTransactionOptions struct {
 	Memo         string  `json:"memo,omitempty"`
 	IsTransfer   bool    `json:"is_transfer,omitempty"`
 	ChequeNumber string  `json:"cheque_number,omitempty"`
+	NeedsReview  bool    `json:"needs_review,omitempty"`
 }
 
 // CreateTransactionAccountTransaction, using the given account id, creates a
