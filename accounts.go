@@ -3,6 +3,7 @@ package pocketsmith
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -78,4 +79,42 @@ func (c *Client) ListAccounts(userId int) ([]Account, error) {
 // list of accounts for the authed user.
 func (c *Client) ListAccountsForAuthedUser() ([]Account, error) {
 	return c.ListAccounts(c.user.ID)
+}
+
+// ListAccountTransactionsOptions defines the options for listing
+// transactions in an account.
+type ListAccountTransactionsOptions struct {
+	StartDate     string `json:"start_date,omitempty"`
+	EndDate       string `json:"end_date,omitempty"`
+	UpdatedSince  string `json:"updated_since,omitempty"`
+	Uncategorised int8   `json:"uncategorised,omitempty"`
+	Type          string `json:"type,omitempty"`
+	NeedsReview   int8   `json:"needs_review,omitempty"`
+	Search        string `json:"search,omitempty"`
+	Page          int    `json:"page,omitempty"`
+}
+
+// ListTransactionAccountTransactions, using the given account id, lists the
+// transactions for an account.
+// https://developers.pocketsmith.com/reference/get_accounts-id-transactions-1
+func (c *Client) ListAccountTransactions(accountId int, options *ListAccountTransactionsOptions) ([]Transaction, error) {
+	var transactions []Transaction
+	cr := clientRequest{
+		method: http.MethodGet,
+		path:   fmt.Sprintf("/accounts/%v/transactions?per_page=100", accountId),
+	}
+	for {
+		var batch []Transaction
+		resp, err := c.sender(cr, &batch)
+		if err != nil {
+			return nil, err
+		}
+		transactions = append(transactions, batch...)
+		next := getHeader(resp.Header, "next")
+		if next == "" {
+			break
+		}
+		cr.path = strings.Replace(next, c.endpoint, "", -1)
+	}
+	return transactions, nil
 }

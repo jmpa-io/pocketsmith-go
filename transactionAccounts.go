@@ -85,7 +85,7 @@ type ListTransactionAccountTransactionsOptions struct {
 
 // ListTransactionAccountTransactions, using the given account id, lists the
 // transactions for a transaction account.
-// https://developers.pocketsmith.com/reference#get_transaction-accounts-id-transactions
+// https://developers.pocketsmith.com/reference/get_transaction-accounts-id-transactions-1
 func (c *Client) ListTransactionAccountTransactions(accountId int, options *ListTransactionAccountTransactionsOptions) ([]Transaction, error) {
 	var transactions []Transaction
 	cr := clientRequest{
