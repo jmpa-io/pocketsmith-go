@@ -8,7 +8,6 @@ import (
 )
 
 // TransactionAccount defines a PocketSmith transaction account.
-// https://developers.pocketsmith.com/reference#get_transaction-accounts-id
 type TransactionAccount struct {
 	ID                           int         `json:"id"`
 	Name                         string      `json:"name"`
@@ -28,7 +27,7 @@ type TransactionAccount struct {
 
 // ListTransactionAccounts, using the given user id, lists transaction accounts
 // for a user.
-// https://developers.pocketsmith.com/reference#get_users-id-transaction-accounts
+// https://developers.pocketsmith.com/reference/get_users-id-transaction-accounts-1
 func (c *Client) ListTransactionAccounts(userId int) ([]TransactionAccount, error) {
 	cr := clientRequest{
 		method: http.MethodGet,
@@ -62,7 +61,7 @@ type CreateTransactionAccountTransactionOptions struct {
 
 // CreateTransactionAccountTransaction, using the given account id, creates a
 // a transaction in an transaction account.
-// https://developers.pocketsmith.com/reference#post_transaction-accounts-id-transactions
+// https://developers.pocketsmith.com/reference/post_transaction-accounts-id-transactions-1
 func (c *Client) CreateTransactionAccountTransaction(accountId int, options *CreateTransactionAccountTransactionOptions) (*Transaction, error) {
 	cr := clientRequest{
 		method: http.MethodPost,
