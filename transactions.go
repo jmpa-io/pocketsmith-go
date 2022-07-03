@@ -7,7 +7,6 @@ import (
 )
 
 // Transaction defines a PocketSmith transaction.
-// https://developers.pocketsmith.com/reference#get_transactions-id
 type Transaction struct {
 	ID                   int32              `json:"id"`
 	Date                 string             `json:"date"`
@@ -46,7 +45,7 @@ type UpdateTransactionOptions struct {
 }
 
 // UpdateTransaction updates a PocketSmith transaction.
-// https://developers.pocketsmith.com/reference#put_transactions-id
+// https://developers.pocketsmith.com/reference/put_transactions-id-1
 func (c *Client) UpdateTransaction(options *UpdateTransactionOptions) (Transaction, error) {
 	cr := clientRequest{
 		method: http.MethodPut,
