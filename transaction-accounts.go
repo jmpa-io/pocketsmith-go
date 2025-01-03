@@ -4,26 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
 )
-
-// TransactionAccount defines a PocketSmith transaction account.
-type TransactionAccount struct {
-	ID                           int         `json:"id"`
-	Name                         string      `json:"name"`
-	Number                       string      `json:"number"`
-	Type                         string      `json:"type"`
-	CurrencyCode                 string      `json:"currency_code"`
-	CurrentBalance               float64     `json:"current_balance"`
-	CurrentBalanceInBaseCurrency float64     `json:"current_balance_in_base_currency"`
-	CurrentBalanceExchangeRate   float64     `json:"current_balance_exchange_rate"`
-	CurrentBalanceDate           string      `json:"current_balance_date"`
-	StartingBalance              float64     `json:"starting_balance"`
-	StartingBalanceDate          string      `json:"starting_balance_date"`
-	Institution                  Institution `json:"institution"`
-	CreatedAt                    time.Time   `json:"created_at"`
-	UpdatedAt                    time.Time   `json:"updated_at"`
-}
 
 // ListTransactionAccounts, using the given user id, lists transaction accounts
 // for a user.
@@ -62,7 +43,10 @@ type CreateTransactionAccountTransactionOptions struct {
 // CreateTransactionAccountTransaction, using the given account id, creates a
 // a transaction in an transaction account.
 // https://developers.pocketsmith.com/reference/post_transaction-accounts-id-transactions-1
-func (c *Client) CreateTransactionAccountTransaction(accountId int, options *CreateTransactionAccountTransactionOptions) (*Transaction, error) {
+func (c *Client) CreateTransactionAccountTransaction(
+	accountId int,
+	options *CreateTransactionAccountTransactionOptions,
+) (*Transaction, error) {
 	cr := clientRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/transaction_accounts/%v/transactions", accountId),
@@ -85,7 +69,10 @@ type ListTransactionAccountTransactionsOptions struct {
 // ListTransactionAccountTransactions, using the given account id, lists the
 // transactions for a transaction account.
 // https://developers.pocketsmith.com/reference/get_transaction-accounts-id-transactions-1
-func (c *Client) ListTransactionAccountTransactions(accountId int, options *ListTransactionAccountTransactionsOptions) ([]Transaction, error) {
+func (c *Client) ListTransactionAccountTransactions(
+	accountId int,
+	options *ListTransactionAccountTransactionsOptions,
+) ([]Transaction, error) {
 	var transactions []Transaction
 	cr := clientRequest{
 		method: http.MethodGet,

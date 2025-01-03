@@ -24,7 +24,10 @@ type CreateInstitutionOptions struct {
 
 // CreateInstitution, using the given user id, creates an institution for a user.
 // https://developers.pocketsmith.com/reference#post_users-id-institutions
-func (c *Client) CreateInstitution(userId int, options *CreateInstitutionOptions) (*Institution, error) {
+func (c *Client) CreateInstitution(
+	userId int,
+	options *CreateInstitutionOptions,
+) (*Institution, error) {
 	cr := clientRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/users/%v/institutions", userId),
@@ -37,7 +40,9 @@ func (c *Client) CreateInstitution(userId int, options *CreateInstitutionOptions
 
 // CreateInstitutionForAuthedUser, using the token attached to the client,
 // creates an institution for the authed user.
-func (c *Client) CreateInstitutionForAuthedUser(options *CreateInstitutionOptions) (*Institution, error) {
+func (c *Client) CreateInstitutionForAuthedUser(
+	options *CreateInstitutionOptions,
+) (*Institution, error) {
 	return c.CreateInstitution(c.user.ID, options)
 }
 
