@@ -6,7 +6,7 @@ import (
 	"regexp"
 )
 
-// the regex used to identify a rel in a http.Header.
+// Ahe regex used to identify a rel in a http.Header.
 var rgxRel = regexp.MustCompile(`<(.+?)>;\s*rel="(.+?)"`)
 
 // getHeader check for the given key in the given headers and tries to
@@ -26,8 +26,8 @@ func getHeader(headers http.Header, key string) string {
 	return ""
 }
 
-// a helper function to check if an interface has a value or not.
-// taken from: https://mangatmodi.medium.com/go-check-nil-interface-the-right-way-d142776edef1
+// A helper function to check if an interface has a value or not.
+// https://mangatmodi.medium.com/go-check-nil-interface-the-right-way-d142776edef1.
 func isNil(i interface{}) bool {
 	if i == nil {
 		return true

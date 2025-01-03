@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -9,8 +10,11 @@ import (
 
 func main() {
 
+	// setup tracing.
+	ctx := context.TODO()
+
 	// setup client.
-	c, err := pocketsmith.New("xxxx")
+	c, err := pocketsmith.New(ctx, "xxxx")
 	if err != nil {
 		fmt.Printf("failed to setup client: %v\n", err)
 		os.Exit(1)

@@ -1,11 +1,12 @@
 package pocketsmith
 
 import (
+	"context"
+	"log/slog"
 	"net/http"
 	"os"
 
-	"github.com/rs/zerolog"
-	// TODO add this log level: https://github.com/rs/zerolog
+	"go.opentelemetry.io/otel"
 )
 
 // An iHttpClient is an interface over http.Client.
@@ -13,32 +14,44 @@ type iHttpClient interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
-// Client defines a PocketSmith client; the interface for this package.
+// Client defines a client for this package.
 type Client struct {
-	logLevel   LogLevel
-	httpClient iHttpClient
-	headers    http.Header
-	endpoint   string // the endpoint to query against.
+
+	// tracing.
+	tracerName string // The name of the tracer output in the traces.
+
+	// config.
+	endpoint   string      // The endpoint to query against.
+	httpClient iHttpClient // The http client used when sending / receiving data from the endpoint.
+	headers    http.Header // The headers passed to the http client when sending / receiving data from the endpoint.
 
 	// misc.
-	logger zerolog.Logger
+	logLevel slog.Level   // The log level of the default logger.
+	logger   *slog.Logger // The logger used in this client (custom or default).
 
 	// metadata.
 	user *User // the authed user attached to the token.
 }
 
-// New returns a client for this package, which can be used to make
-// requests to the PocketSmith API.
-func New(token string, options ...Option) (*Client, error) {
+// New creates and returns a new Client, initialized with the provided token.
+// The client itself is set up with tracing, logging, and HTTP configuration.
+// Additional options can be provided to modify its behavior, via the options
+// slice. The client is used for making requests and interacting with the
+// Pockestmith API.
+func New(ctx context.Context, token string, options ...Option) (*Client, error) {
+
+	// setup tracing.
+	tracerName := "pocketsmith-go"
+	_, span := otel.Tracer(tracerName).Start(ctx, "New")
+	defer span.End()
 
 	// check args.
 	if token == "" {
-		return nil, ErrMissingToken{}
+		return nil, ErrClientEmptyToken{}
 	}
 
 	// default client.
 	c := &Client{
-		logLevel:   LogLevelDebug,
 		httpClient: http.DefaultClient,
 		endpoint:   "https://api.pocketsmith.com/v2",
 	}
@@ -46,36 +59,30 @@ func New(token string, options ...Option) (*Client, error) {
 	// overwrite client with any given options.
 	for _, o := range options {
 		if err := o(c); err != nil {
-			return nil, ErrFailedOptionSet{err}
+			return nil, ErrClientFailedToSetOption{err}
 		}
 	}
 
-	// setup logger.
-	zerolog.MessageFieldName = "msg"
-	var level zerolog.Level
-	switch c.logLevel {
-	case LogLevelDebug:
-		level = zerolog.DebugLevel
-	case LogLevelInfo:
-		level = zerolog.InfoLevel
-	case LogLevelWarn:
-		level = zerolog.WarnLevel
-	case LogLevelError:
-		level = zerolog.ErrorLevel
-	default:
-		level = zerolog.ErrorLevel
+	// determine if the default logger should be used.
+	if c.logger == nil {
+
+		// use default logger.
+		c.logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+			Level: c.logLevel, // default log level is 'INFO'.
+			ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+				if a.Key == slog.TimeKey {
+					a.Value = slog.StringValue(a.Value.Time().Format("2006-01-02 15:04:05"))
+				}
+				return a
+			},
+		}))
+
 	}
-	c.logger = zerolog.New(os.Stderr).
-		With().Caller().Logger().
-		With().Timestamp().Logger().Level(level)
-	c.logger.Debug().Msg("setting up client")
 
 	// setup headers.
 	headers := make(http.Header)
 	headers.Set("X-Developer-Key", token)
 	headers.Set("Content-Type", "application/json")
-	headers.Set("Accept", "application/json") // TODO is this needed?
-	headers.Set("Accept-Charset", "utf-8")    // TODO is this needed?
 	c.headers = headers
 
 	// retrieve authed user, to determine if the token is valid.
@@ -85,6 +92,6 @@ func New(token string, options ...Option) (*Client, error) {
 	}
 	c.user = user
 
-	c.logger.Debug().Msg("client setup successfully")
+	c.logger.Debug("client setup successfully")
 	return c, nil
 }

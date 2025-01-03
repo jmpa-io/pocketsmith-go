@@ -5,7 +5,8 @@ package pocketsmith
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
+	"log/slog"
 	"net/http"
 )
 
@@ -16,8 +17,8 @@ type clientRequest struct {
 	data   interface{}
 }
 
-// envelope defines errors returned from the API.
-type envelope struct {
+// apiErrorResponse defines errors returned from the API.
+type apiErrorResponse struct {
 	Error string `json:"error"`
 }
 
@@ -51,14 +52,14 @@ func (c *Client) sender(cr clientRequest, result interface{}) (*http.Response, e
 	defer resp.Body.Close()
 
 	// parse response.
-	b, err := ioutil.ReadAll(resp.Body)
+	b, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return nil, ErrSenderFailedParseResponse{err}
 	}
-	c.logger.Debug().
-		Int("code", resp.StatusCode).
-		Str("body", string(b)).
-		Msg("response from API")
+	c.logger.Debug("response from API",
+		slog.Int("code", resp.StatusCode),
+		slog.String("body", string(b)),
+	)
 
 	// was this a valid request to the API?
 	if http.StatusOK <= resp.StatusCode && resp.StatusCode < http.StatusMultipleChoices {
@@ -69,9 +70,9 @@ func (c *Client) sender(cr clientRequest, result interface{}) (*http.Response, e
 	}
 
 	// since we have an unexpected invalid response, return a generic response.
-	var env envelope
+	var env apiErrorResponse
 	if err := json.Unmarshal(b, &env); err != nil {
 		return nil, ErrFailedUnmarshal{err}
 	}
-	return nil, ErrSenderInvalidResponse{env.Error, resp.StatusCode}
+	return nil, ErrSenderInvalidResponse{env, resp.StatusCode}
 }
