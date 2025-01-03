@@ -1,9 +1,12 @@
 package pocketsmith
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
+
+	"go.opentelemetry.io/otel"
 )
 
 // CreateAccountOptions defines the options for creating an account for a user.
@@ -16,50 +19,79 @@ type CreateAccountOptions struct {
 
 // CreateAccount, using the given user id, creates an account for a user.
 // https://developers.pocketsmith.com/reference#post_users-id-accounts
-func (c *Client) CreateAccount(userId int, options *CreateAccountOptions) (*Account, error) {
-	cr := clientRequest{
+func (c *Client) CreateAccount(
+	ctx context.Context,
+	userId int,
+	options *CreateAccountOptions,
+) (*Account, error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateAccount")
+	defer span.End()
+
+	var account *Account
+	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/users/%v/accounts", userId),
 		data:   options,
-	}
-	var account *Account
-	_, err := c.sender(cr, &account)
+	}, &account)
 	return account, err
 }
 
 // CreateAccountForAuthedUser, using the token attached to the client, creates
 // an account for the authed user.
-func (c *Client) CreateAccountForAuthedUser(options *CreateAccountOptions) (*Account, error) {
-	return c.CreateAccount(c.user.ID, options)
+func (c *Client) CreateAccountForAuthedUser(
+	ctx context.Context,
+	options *CreateAccountOptions,
+) (*Account, error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateAccountForAuthedUser")
+	defer span.End()
+
+	return c.CreateAccount(newCtx, c.user.ID, options)
 }
 
 // DeleteAccount, using the given account id, deletes an account.
 // https://developers.pocketsmith.com/reference#delete_accounts-id
-func (c *Client) DeleteAccount(accountId int) error {
-	cr := clientRequest{
+func (c *Client) DeleteAccount(ctx context.Context, accountId int) error {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "DeleteAccount")
+	defer span.End()
+
+	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodDelete,
 		path:   fmt.Sprintf("/accounts/%v", accountId),
-	}
-	_, err := c.sender(cr, nil)
+	}, nil)
 	return err
 }
 
 // ListAccounts, using the given user id, returns a list of account for a user.
 // https://developers.pocketsmith.com/reference#get_users-id-accounts
-func (c *Client) ListAccounts(userId int) ([]Account, error) {
-	cr := clientRequest{
+func (c *Client) ListAccounts(ctx context.Context, userId int) ([]Account, error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAccounts")
+	defer span.End()
+
+	var accounts []Account
+	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/users/%v/accounts", userId),
-	}
-	var accounts []Account
-	_, err := c.sender(cr, &accounts)
+	}, &accounts)
 	return accounts, err
 }
 
 // ListAccountsForAuthedUser, using the token attached to the client, returns a
 // list of accounts for the authed user.
-func (c *Client) ListAccountsForAuthedUser() ([]Account, error) {
-	return c.ListAccounts(c.user.ID)
+func (c *Client) ListAccountsForAuthedUser(ctx context.Context) ([]Account, error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAccountsForAuthedUser")
+	defer span.End()
+
+	return c.ListAccounts(newCtx, c.user.ID)
 }
 
 // ListAccountTransactionsOptions defines the options for listing
@@ -79,17 +111,23 @@ type ListAccountTransactionsOptions struct {
 // transactions for an account.
 // https://developers.pocketsmith.com/reference/get_accounts-id-transactions-1
 func (c *Client) ListAccountTransactions(
+	ctx context.Context,
 	accountId int,
 	options *ListAccountTransactionsOptions,
 ) ([]Transaction, error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAccountTransactions")
+	defer span.End()
+
 	var transactions []Transaction
-	cr := clientRequest{
+	cr := senderRequest{
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/accounts/%v/transactions?per_page=100", accountId),
 	}
 	for {
 		var batch []Transaction
-		resp, err := c.sender(cr, &batch)
+		resp, err := c.sender(newCtx, cr, &batch)
 		if err != nil {
 			return nil, err
 		}
