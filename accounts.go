@@ -18,7 +18,7 @@ type CreateAccountOptions struct {
 }
 
 // CreateAccount, using the given user id, creates an account for a user.
-// https://developers.pocketsmith.com/reference#post_users-id-accounts
+// https://developers.pocketsmith.com/reference#post_users-id-accounts.
 func (c *Client) CreateAccount(
 	ctx context.Context,
 	userId int,
@@ -29,6 +29,7 @@ func (c *Client) CreateAccount(
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateAccount")
 	defer span.End()
 
+	// create account.
 	var account *Account
 	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodPost,
@@ -49,17 +50,19 @@ func (c *Client) CreateAccountForAuthedUser(
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateAccountForAuthedUser")
 	defer span.End()
 
+	// create account for authed user.
 	return c.CreateAccount(newCtx, c.user.ID, options)
 }
 
 // DeleteAccount, using the given account id, deletes an account.
-// https://developers.pocketsmith.com/reference#delete_accounts-id
+// https://developers.pocketsmith.com/reference#delete_accounts-id.
 func (c *Client) DeleteAccount(ctx context.Context, accountId int) error {
 
 	// setup tracing.
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "DeleteAccount")
 	defer span.End()
 
+	// delete account.
 	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodDelete,
 		path:   fmt.Sprintf("/accounts/%v", accountId),
@@ -68,13 +71,14 @@ func (c *Client) DeleteAccount(ctx context.Context, accountId int) error {
 }
 
 // ListAccounts, using the given user id, returns a list of account for a user.
-// https://developers.pocketsmith.com/reference#get_users-id-accounts
+// https://developers.pocketsmith.com/reference#get_users-id-accounts.
 func (c *Client) ListAccounts(ctx context.Context, userId int) ([]Account, error) {
 
 	// setup tracing.
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAccounts")
 	defer span.End()
 
+	// list accounts.
 	var accounts []Account
 	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
@@ -91,6 +95,7 @@ func (c *Client) ListAccountsForAuthedUser(ctx context.Context) ([]Account, erro
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAccountsForAuthedUser")
 	defer span.End()
 
+	// list accounts for authed user.
 	return c.ListAccounts(newCtx, c.user.ID)
 }
 
@@ -114,29 +119,37 @@ func (c *Client) ListAccountTransactions(
 	ctx context.Context,
 	accountId int,
 	options *ListAccountTransactionsOptions,
-) ([]Transaction, error) {
+) (transactions []Transaction, err error) {
 
 	// setup tracing.
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAccountTransactions")
 	defer span.End()
 
-	var transactions []Transaction
-	cr := senderRequest{
+	// setup request.
+	sr := senderRequest{
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/accounts/%v/transactions?per_page=100", accountId),
+		data:   options,
 	}
+
+	// retrieve transactions for account.
 	for {
+
+		// get respons
 		var batch []Transaction
-		resp, err := c.sender(newCtx, cr, &batch)
+		resp, err := c.sender(newCtx, sr, &batch)
 		if err != nil {
 			return nil, err
 		}
 		transactions = append(transactions, batch...)
+
+		// paginate?
 		next := getHeader(resp.Header, "next")
 		if next == "" {
 			break
 		}
-		cr.path = strings.Replace(next, c.endpoint, "", -1)
+		sr.path = strings.Replace(next, c.endpoint, "", -1)
 	}
+
 	return transactions, nil
 }
