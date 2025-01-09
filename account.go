@@ -16,6 +16,7 @@ type Account struct {
 	CurrentBalanceDate           string               `json:"current_balance_date"`
 	PrimaryTransactionAccount    TransactionAccount   `json:"primary_transaction_account"`
 	TransactionAccounts          []TransactionAccount `json:"transaction_accounts"`
-	CreatedAt                    time.Time            `json:"created_at"`
-	UpdatedAt                    time.Time            `json:"updated_at"`
+
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

@@ -32,7 +32,7 @@ func (c *Client) CreateAttachment(
 	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/users/%v/attachments", userId),
-		data:   options,
+		body:   options,
 	}, &attachment)
 	return attachment, err
 }
@@ -89,7 +89,7 @@ func (c *Client) ListAttachments(
 	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/users/%v/attachments", userId),
-		data:   options,
+		body:   options,
 	}, &attachments)
 	return attachments, err
 }
@@ -131,7 +131,7 @@ func (c *Client) AssignAttachmentToTransaction(
 	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/transactions/%v/attachments", options.TransactionID),
-		data:   options,
+		body:   options,
 	}, &attachment)
 	return attachment, err
 }

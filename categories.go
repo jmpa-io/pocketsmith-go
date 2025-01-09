@@ -1,8 +1,11 @@
 package pocketsmith
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+
+	"go.opentelemetry.io/otel"
 )
 
 // CreateCategoryOptions defines the options for creating a catagory for a user.
@@ -18,55 +21,101 @@ type CreateCategoryOptions struct {
 
 // CreateCategory, using the given user id, creates a category for a user.
 // https://developers.pocketsmith.com/reference/post_users-id-categories-1
-func (c *Client) CreateCategory(userId int, options *CreateCategoryOptions) error {
-	cr := clientRequest{
+func (c *Client) CreateCategory(
+	ctx context.Context,
+	userId int,
+	options *CreateCategoryOptions,
+) error {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateCategory")
+	defer span.End()
+
+	// create category.
+	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/users/%v/categories", userId),
-		data:   options,
-	}
-	_, err := c.sender(cr, nil)
+		body:   options,
+	}, nil)
 	return err
 }
 
 // CreateCategoryForAuthedUser, using the token attached to a client, creates a
 // category for the authed user.
-func (c *Client) CreateCategoryForAuthedUser(options *CreateCategoryOptions) error {
-	return c.CreateCategory(c.user.ID, options)
+func (c *Client) CreateCategoryForAuthedUser(
+	ctx context.Context,
+	options *CreateCategoryOptions,
+) error {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateCategoryForAuthedUser")
+	defer span.End()
+
+	// create category for authed user.
+	return c.CreateCategory(newCtx, c.user.ID, options)
 }
 
 // DeleteCategory, using the given category id, deletes a category.
 // https://developers.pocketsmith.com/reference/delete_categories-id-1
-func (c *Client) DeleteCategory(categoryId int32) error {
-	cr := clientRequest{
+func (c *Client) DeleteCategory(ctx context.Context, categoryId int32) error {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateCategory")
+	defer span.End()
+
+	// delete category.
+	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodDelete,
 		path:   fmt.Sprintf("/categories/%v", categoryId),
-	}
-	_, err := c.sender(cr, nil)
+	}, nil)
 	return err
 }
 
 // ListCategories, using the given user id, lists the categories for a user.
 // https://developers.pocketsmith.com/reference#get_users-id-categories
-func (c *Client) ListCategories(userId int) ([]Category, error) {
-	cr := clientRequest{
+func (c *Client) ListCategories(
+	ctx context.Context,
+	userId int,
+) (categories []Category, err error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListCategories")
+	defer span.End()
+
+	// list categories.
+	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/users/%v/categories", userId),
-	}
-	var categories []Category
-	_, err := c.sender(cr, &categories)
+	}, &categories)
 	return categories, err
 }
 
 // ListCategoriesForAuthedUser, using the token attached to a client, lists the
 // categories for the authed user.
-func (c *Client) ListCategoriesForAuthedUser() ([]Category, error) {
-	return c.ListCategories(c.user.ID)
+func (c *Client) ListCategoriesForAuthedUser(ctx context.Context) ([]Category, error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListCategoriesForAuthedUser")
+	defer span.End()
+
+	// list categories for authed user.
+	return c.ListCategories(newCtx, c.user.ID)
 }
 
 // GetCategoryByTitle, using the given user id and category, returns the found
 // category for a user.
-func (c *Client) GetCategoryByTitle(userId int, category string) (*Category, error) {
-	categories, err := c.ListCategories(userId)
+func (c *Client) GetCategoryByTitle(
+	ctx context.Context,
+	userId int,
+	category string,
+) (*Category, error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "GetCategoryByTitle")
+	defer span.End()
+
+	// get category by title.
+	categories, err := c.ListCategories(newCtx, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -80,6 +129,15 @@ func (c *Client) GetCategoryByTitle(userId int, category string) (*Category, err
 
 // GetCategoryByTitleForAuthedUser, using the token attached to the client,
 // returns the found category for the authed user.
-func (c *Client) GetCategoryByTitleForAuthedUser(category string) (*Category, error) {
-	return c.GetCategoryByTitle(c.user.ID, category)
+func (c *Client) GetCategoryByTitleForAuthedUser(
+	ctx context.Context,
+	category string,
+) (*Category, error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "GetCategoryByTitleForAuthedUser")
+	defer span.End()
+
+	// get category by title.
+	return c.GetCategoryByTitle(newCtx, c.user.ID, category)
 }

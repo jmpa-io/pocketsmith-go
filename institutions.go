@@ -1,8 +1,11 @@
 package pocketsmith
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+
+	"go.opentelemetry.io/otel"
 )
 
 // CreateInstitutionOptions defines the options for creating an institution.
@@ -14,25 +17,37 @@ type CreateInstitutionOptions struct {
 // CreateInstitution, using the given user id, creates an institution for a user.
 // https://developers.pocketsmith.com/reference#post_users-id-institutions
 func (c *Client) CreateInstitution(
+	ctx context.Context,
 	userId int,
 	options *CreateInstitutionOptions,
-) (*Institution, error) {
-	cr := clientRequest{
+) (institution *Institution, err error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateInstitution")
+	defer span.End()
+
+	// create institution.
+	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/users/%v/institutions", userId),
-		data:   options,
-	}
-	var institution *Institution
-	_, err := c.sender(cr, &institution)
+		body:   options,
+	}, &institution)
 	return institution, err
 }
 
 // CreateInstitutionForAuthedUser, using the token attached to the client,
 // creates an institution for the authed user.
 func (c *Client) CreateInstitutionForAuthedUser(
+	ctx context.Context,
 	options *CreateInstitutionOptions,
 ) (*Institution, error) {
-	return c.CreateInstitution(c.user.ID, options)
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateInstitutionForAuthedUser")
+	defer span.End()
+
+	// create Institution for authed user.
+	return c.CreateInstitution(newCtx, c.user.ID, options)
 }
 
 // DeleteInstitutionOptions defines the options for deleteing an institution.
@@ -42,30 +57,52 @@ type DeleteInstitutionOptions struct {
 
 // DeleteInstitution, using the given institution id, creates an institution.
 // https://developers.pocketsmith.com/reference/delete_institutions-id-1
-func (c *Client) DeleteInstitution(institutionId int, options *DeleteInstitutionOptions) error {
-	cr := clientRequest{
+func (c *Client) DeleteInstitution(
+	ctx context.Context,
+	institutionId int,
+	options *DeleteInstitutionOptions,
+) error {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "DeleteInstitution")
+	defer span.End()
+
+	// delete institution.
+	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodDelete,
 		path:   fmt.Sprintf("/institutions/%v", institutionId),
-		data:   options,
-	}
-	_, err := c.sender(cr, nil)
+		body:   options,
+	}, nil)
 	return err
 }
 
 // ListInstitutions, using the given user id, list the institutions for a user.
 // https://developers.pocketsmith.com/reference#get_users-id-institutions
-func (c *Client) ListInstitutions(userId int) ([]Institution, error) {
-	cr := clientRequest{
+func (c *Client) ListInstitutions(
+	ctx context.Context,
+	userId int,
+) (institutions []Institution, err error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListInstitutions")
+	defer span.End()
+
+	// list institutions.
+	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/users/%v/institutions", userId),
-	}
-	var institutions []Institution
-	_, err := c.sender(cr, &institutions)
+	}, &institutions)
 	return institutions, err
 }
 
 // ListInstitutionsForAuthedUser, using the token attached to the client, lists
 // the institutions for the authed user.
-func (c *Client) ListInstitutionsForAuthedUser() ([]Institution, error) {
-	return c.ListInstitutions(c.user.ID)
+func (c *Client) ListInstitutionsForAuthedUser(ctx context.Context) ([]Institution, error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListInstitutionsForAuthedUser")
+	defer span.End()
+
+	// list institutions for authed user.
+	return c.ListInstitutions(newCtx, c.user.ID)
 }

@@ -18,7 +18,7 @@ import (
 type senderRequest struct {
 	method  string      // The HTTP method to use (eg. GET, POST, PUT, DELETE).
 	path    string      // The path appended to the API endpoint to send request to.
-	data    interface{} // The request body data.
+	body    interface{} // The request body.
 	queries url.Values  // Any URL query parameters to send with the request.
 }
 
@@ -44,8 +44,8 @@ func (c *Client) sender(
 
 	// marshal body.
 	var body []byte
-	if !isNil(sr.data) {
-		body, err = json.Marshal(sr.data)
+	if !isNil(sr.body) {
+		body, err = json.Marshal(sr.body)
 		if err != nil {
 			return nil, ErrFailedMarshal{err}
 		}
