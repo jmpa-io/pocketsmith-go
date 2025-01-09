@@ -5,8 +5,9 @@ PROJECT=pocketsmith-go
 endif
 
 # Targets.
-example: binary-go-example
-run: example
+accounts: binary-go-accounts
+authed-user: binary-go-authed-user
+run: accounts authed-user
 PHONY += run
 
 ---: ## ---

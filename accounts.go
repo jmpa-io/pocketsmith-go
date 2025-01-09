@@ -34,7 +34,7 @@ func (c *Client) CreateAccount(
 	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodPost,
 		path:   fmt.Sprintf("/users/%v/accounts", userId),
-		data:   options,
+		body:   options,
 	}, &account)
 	return account, err
 }
@@ -129,7 +129,7 @@ func (c *Client) ListAccountTransactions(
 	sr := senderRequest{
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/accounts/%v/transactions?per_page=100", accountId),
-		data:   options,
+		body:   options,
 	}
 
 	// retrieve transactions for account.
