@@ -42,7 +42,7 @@ func New(ctx context.Context, token string, options ...Option) (*Client, error) 
 
 	// setup tracing.
 	tracerName := "pocketsmith-go"
-	_, span := otel.Tracer(tracerName).Start(ctx, "New")
+	newCtx, span := otel.Tracer(tracerName).Start(ctx, "New")
 	defer span.End()
 
 	// check args.
@@ -86,11 +86,10 @@ func New(ctx context.Context, token string, options ...Option) (*Client, error) 
 	c.headers = headers
 
 	// retrieve authed user, to determine if the token is valid.
-	user, err := c.GetAuthedUser()
-	if err != nil {
-		return nil, err
+	var err error
+	if c.user, err = c.GetAuthedUser(newCtx); err != nil {
+		return nil, ErrClientFailedToGetAuthedUser{err}
 	}
-	c.user = user
 
 	c.logger.Debug("client setup successfully")
 	return c, nil

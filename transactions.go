@@ -1,8 +1,11 @@
 package pocketsmith
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+
+	"go.opentelemetry.io/otel"
 )
 
 // UpdateTransactionOptions defines the options for updating a transaction.
@@ -21,13 +24,20 @@ type UpdateTransactionOptions struct {
 
 // UpdateTransaction updates a PocketSmith transaction.
 // https://developers.pocketsmith.com/reference/put_transactions-id-1
-func (c *Client) UpdateTransaction(options *UpdateTransactionOptions) (Transaction, error) {
-	cr := clientRequest{
+func (c *Client) UpdateTransaction(
+	ctx context.Context,
+	options *UpdateTransactionOptions,
+) (transaction *Transaction, err error) {
+
+	// setup tracing.
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "UpdateTransaction")
+	defer span.End()
+
+	//  update transaction.
+	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodPut,
 		path:   fmt.Sprintf("/transactions/%v", options.ID),
-		data:   options,
-	}
-	var transaction Transaction
-	_, err := c.sender(cr, &transaction)
+		body:   options,
+	}, &transaction)
 	return transaction, err
 }
