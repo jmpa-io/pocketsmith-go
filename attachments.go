@@ -49,7 +49,7 @@ func (c *Client) CreateAttachmentForAuthedUser(
 	defer span.End()
 
 	// create attachment for user.
-	return c.CreateAttachment(newCtx, c.user.ID, options)
+	return c.CreateAttachment(newCtx, c.authedUser.ID, options)
 }
 
 // DeleteAttachment, using the given attachment id, deletes an attachment.
@@ -106,7 +106,7 @@ func (c *Client) ListAttachmentsForAuthedUser(
 	defer span.End()
 
 	// list attachments.
-	return c.ListAttachments(newCtx, c.user.ID, options)
+	return c.ListAttachments(newCtx, c.authedUser.ID, options)
 }
 
 // AssignAttachmentToTransactionOptions defines the options for assigning an

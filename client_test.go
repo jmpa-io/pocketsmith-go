@@ -1,7 +1,9 @@
 package pocketsmith
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -11,6 +13,7 @@ import (
 )
 
 var (
+
 	// test logger.
 	logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
 		Level: slog.LevelDebug,
@@ -26,16 +29,29 @@ var (
 	httpClient = &http.Client{
 		Timeout: 30 * time.Second,
 	}
+
+	// test authed user mock.
+	authedUserMock = &mockRoundTripper{
+		MockFunc: func(req *http.Request) *http.Response {
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBuffer([]byte(""))),
+				Header:     make(http.Header),
+			}
+		},
+	}
 )
 
 func Test_New(t *testing.T) {
 	tests := map[string]struct {
+		mock    *mockRoundTripper
 		token   string
 		options []Option
 		want    *Client
 		err     string
 	}{
 		"default": {
+			mock:  authedUserMock,
 			token: "xxxx",
 			want: &Client{
 				httpClient: http.DefaultClient,
@@ -47,6 +63,7 @@ func Test_New(t *testing.T) {
 			err:  "the provided token is empty",
 		},
 		"with log level (debug)": {
+			mock:    authedUserMock,
 			token:   "xxxx",
 			options: []Option{WithLogLevel(slog.LevelDebug)},
 			want: &Client{
@@ -56,6 +73,7 @@ func Test_New(t *testing.T) {
 			},
 		},
 		"with log level (info)": {
+			mock:    authedUserMock,
 			token:   "xxxx",
 			options: []Option{WithLogLevel(slog.LevelInfo)},
 			want: &Client{
@@ -65,6 +83,7 @@ func Test_New(t *testing.T) {
 			},
 		},
 		"with log level (warn)": {
+			mock:    authedUserMock,
 			token:   "xxxx",
 			options: []Option{WithLogLevel(slog.LevelWarn)},
 			want: &Client{
@@ -74,6 +93,7 @@ func Test_New(t *testing.T) {
 			},
 		},
 		"with log level (error)": {
+			mock:    authedUserMock,
 			token:   "xxxx",
 			options: []Option{WithLogLevel(slog.LevelError)},
 			want: &Client{
@@ -83,6 +103,7 @@ func Test_New(t *testing.T) {
 			},
 		},
 		"with logger": {
+			mock:    authedUserMock,
 			token:   "xxxx",
 			options: []Option{WithLogger(logger)},
 			want: &Client{
@@ -91,6 +112,7 @@ func Test_New(t *testing.T) {
 			},
 		},
 		"with http client": {
+			mock:    authedUserMock,
 			token:   "xxxx",
 			options: []Option{WithHttpClient(httpClient)},
 			want: &Client{
@@ -105,6 +127,15 @@ func Test_New(t *testing.T) {
 		headers := make(http.Header)
 		if tt.token != "" {
 			headers.Add("Authorization", "Bearer "+tt.token)
+		}
+
+		// add mock to client.
+		if tt.mock != nil {
+			tt.options = append(tt.options, WithHttpClient(
+				&http.Client{
+					Transport: tt.mock,
+				},
+			))
 		}
 
 		// run tests.

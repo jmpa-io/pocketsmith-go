@@ -40,7 +40,7 @@ func (c *Client) ListTransactionAccountsForAuthedUser(
 	defer span.End()
 
 	// list transaction accounts for authed user.
-	return c.ListTransactionAccounts(newCtx, c.user.ID)
+	return c.ListTransactionAccounts(newCtx, c.authedUser.ID)
 }
 
 // CreateTransactionAccountTransactionOptions defines the options for creating

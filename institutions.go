@@ -47,7 +47,7 @@ func (c *Client) CreateInstitutionForAuthedUser(
 	defer span.End()
 
 	// create Institution for authed user.
-	return c.CreateInstitution(newCtx, c.user.ID, options)
+	return c.CreateInstitution(newCtx, c.authedUser.ID, options)
 }
 
 // DeleteInstitutionOptions defines the options for deleteing an institution.
@@ -104,5 +104,5 @@ func (c *Client) ListInstitutionsForAuthedUser(ctx context.Context) ([]Instituti
 	defer span.End()
 
 	// list institutions for authed user.
-	return c.ListInstitutions(newCtx, c.user.ID)
+	return c.ListInstitutions(newCtx, c.authedUser.ID)
 }
