@@ -12,7 +12,7 @@ type customTime struct {
 
 func (ct *customTime) UnmarshalJSON(b []byte) error {
 	str := string(b)
-	str = str[1 : len(str)-1] // Remove quotes around the date string
+	str = str[1 : len(str)-1] // remove quotes around the date string.
 	parsedTime, err := time.Parse(customTimeFormat, str)
 	if err != nil {
 		return err

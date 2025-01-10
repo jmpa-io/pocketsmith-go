@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 )
 
 // User defines a PocketSmith user.
@@ -48,7 +49,13 @@ func (c *Client) GetAuthedUser(ctx context.Context) (user *User, err error) {
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "GetAuthedUser")
 	defer span.End()
 
-	// get authed user.
+	// return the current authed user.
+	if c.authedUser != nil {
+		span.SetAttributes(attribute.Bool("cached", true))
+		return c.authedUser, nil
+	}
+
+	// get authed user from the API.
 	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
 		path:   "/me",

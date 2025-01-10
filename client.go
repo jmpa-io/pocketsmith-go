@@ -30,7 +30,7 @@ type Client struct {
 	logger   *slog.Logger // The logger used in this client (custom or default).
 
 	// metadata.
-	user *User // the authed user attached to the token.
+	authedUser *User // the authed user attached to the token.
 }
 
 // New creates and returns a new Client, initialized with the provided token.
@@ -87,7 +87,7 @@ func New(ctx context.Context, token string, options ...Option) (*Client, error) 
 
 	// retrieve authed user, to determine if the token is valid.
 	var err error
-	if c.user, err = c.GetAuthedUser(newCtx); err != nil {
+	if c.authedUser, err = c.GetAuthedUser(newCtx); err != nil {
 		return nil, ErrClientFailedToGetAuthedUser{err}
 	}
 

@@ -4,11 +4,20 @@ ifndef PROJECT
 PROJECT=pocketsmith-go
 endif
 
+# Variables.
+TOKEN := $(shell aws ssm get-parameter --name "/tokens/pocketsmith" --query 'Parameter.Value' --output text --with-decryption)
+
 # Targets.
 accounts: binary-go-accounts
 authed-user: binary-go-authed-user
-run: accounts authed-user
-PHONY += run
+tracing: binary-go-tracing
+run: accounts authed-user tracing
+
+PHONY += accounts authed-user tracing run
+
+get-token: ## Retrieves the Pocketsmith token from AWS SSM Parameter Store.
+get-token:
+	@echo "export POCKETSMITH_TOKEN=\"$(TOKEN)\""
 
 ---: ## ---
 
