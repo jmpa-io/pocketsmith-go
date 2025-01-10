@@ -51,7 +51,7 @@ func (c *Client) CreateAccountForAuthedUser(
 	defer span.End()
 
 	// create account for authed user.
-	return c.CreateAccount(newCtx, c.user.ID, options)
+	return c.CreateAccount(newCtx, c.authedUser.ID, options)
 }
 
 // DeleteAccount, using the given account id, deletes an account.
@@ -96,7 +96,7 @@ func (c *Client) ListAccountsForAuthedUser(ctx context.Context) ([]Account, erro
 	defer span.End()
 
 	// list accounts for authed user.
-	return c.ListAccounts(newCtx, c.user.ID)
+	return c.ListAccounts(newCtx, c.authedUser.ID)
 }
 
 // ListAccountTransactionsOptions defines the options for listing

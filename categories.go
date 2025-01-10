@@ -52,7 +52,7 @@ func (c *Client) CreateCategoryForAuthedUser(
 	defer span.End()
 
 	// create category for authed user.
-	return c.CreateCategory(newCtx, c.user.ID, options)
+	return c.CreateCategory(newCtx, c.authedUser.ID, options)
 }
 
 // DeleteCategory, using the given category id, deletes a category.
@@ -99,7 +99,7 @@ func (c *Client) ListCategoriesForAuthedUser(ctx context.Context) ([]Category, e
 	defer span.End()
 
 	// list categories for authed user.
-	return c.ListCategories(newCtx, c.user.ID)
+	return c.ListCategories(newCtx, c.authedUser.ID)
 }
 
 // GetCategoryByTitle, using the given user id and category, returns the found
@@ -139,5 +139,5 @@ func (c *Client) GetCategoryByTitleForAuthedUser(
 	defer span.End()
 
 	// get category by title.
-	return c.GetCategoryByTitle(newCtx, c.user.ID, category)
+	return c.GetCategoryByTitle(newCtx, c.authedUser.ID, category)
 }
