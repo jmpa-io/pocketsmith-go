@@ -2,11 +2,13 @@ package pocketsmith
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // User defines a PocketSmith user.
@@ -41,7 +43,7 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// GetAuthedUser returns data about the user who owns the token used by the client.
+// GetAuthedUser returns data about the user who owns the token used by this client.
 // https://developers.pocketsmith.com/reference/get_me-1.
 func (c *Client) GetAuthedUser(ctx context.Context) (user *User, err error) {
 
@@ -55,20 +57,25 @@ func (c *Client) GetAuthedUser(ctx context.Context) (user *User, err error) {
 		return c.authedUser, nil
 	}
 
-	// get authed user from the API.
+	// get authed user.
 	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
 		path:   "/me",
 	}, &user)
-	return user, err
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return user, nil
 }
 
 // GetUserOptions ...
 type GetUserOptions struct {
-	ID int `json:"id"`
+	ID int `json:"id" validator:"required"`
 }
 
-// GetUser ...
+// GetUser returns data about a user, by their given user id.
 // https://developers.pocketsmith.com/reference/get_users-id-1.
 func (c *Client) GetUser(ctx context.Context, options *GetUserOptions) (user *User, err error) {
 
@@ -76,22 +83,23 @@ func (c *Client) GetUser(ctx context.Context, options *GetUserOptions) (user *Us
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "GetUser")
 	defer span.End()
 
+	// validate options.
+	if err := c.validator.StructCtx(newCtx, options); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to validate options: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// get user.
 	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
 		path:   "/users/id",
 		body:   options,
 	}, &user)
-	return user, err
-}
-
-type UpdateUserOptions struct {
-	ID                     int    `json:"id"`
-	Email                  string `json:"email"`
-	Name                   string `json:"name"`
-	TimeZone               string `json:"time_zone"`
-	WeekStartDay           int    `json:"week_start_day"`
-	BetaUser               bool   `json:"beta_user"`
-	BaseCurrencyCode       string `json:"base_currency_code"`
-	AlwaysShowBaseCurrency bool   `json:"always_show_base_currency"`
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return user, nil
 }
