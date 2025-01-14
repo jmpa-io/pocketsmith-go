@@ -3,7 +3,6 @@ package pocketsmith
 import "time"
 
 // Institution defines a PocketSmith institution.
-// https://developers.pocketsmith.com/reference#get_institutions-id
 type Institution struct {
 	ID           int       `json:"id"`
 	Title        string    `json:"title"`

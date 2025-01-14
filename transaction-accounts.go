@@ -7,45 +7,67 @@ import (
 	"strings"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
-// ListTransactionAccounts, using the given user id, lists transaction accounts
-// for a user.
-// https://developers.pocketsmith.com/reference/get_users-id-transaction-accounts-1
+// TransactionAccounts represents a slice of TransactionAccount.
+type TransactionAccounts []TransactionAccount
+
+type ListTransactionAccountsOptions struct {
+	userID int `validator:"required"`
+}
+
+// ListTransactionAccounts lists the transaction accounts for the given user id.
+// https://developers.pocketsmith.com/reference/get_users-id-transaction-accounts-1.
 func (c *Client) ListTransactionAccounts(
 	ctx context.Context,
-	userId int,
-) (accounts []TransactionAccount, err error) {
+	options *ListTransactionAccountsOptions,
+) (accounts TransactionAccounts, err error) {
 
 	// setup tracing.
-	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListInstitutions")
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListTransactionAccounts")
 	defer span.End()
+
+	// validate options.
+	if err := c.validator.StructCtx(newCtx, options); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to validate options: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
 
 	// list transaction accounts.
 	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
-		path:   fmt.Sprintf("/users/%v/transaction_accounts", userId),
+		path:   fmt.Sprintf("/users/%v/transaction_accounts", options.userID),
 	}, &accounts)
-	return accounts, err
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return accounts, nil
 }
 
-// ListTransactionAccountsForAuthedUser, using the token attached to the client,
-// lists transaction accounts for the authed user.
+// ListTransactionAccountsForAuthedUser lists the transaction accounts for the authed user.
 func (c *Client) ListTransactionAccountsForAuthedUser(
 	ctx context.Context,
-) ([]TransactionAccount, error) {
+) (TransactionAccounts, error) {
 
 	// setup tracing.
-	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListInstitutions")
+	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListTransactionAccountsForAuthedUser")
 	defer span.End()
 
 	// list transaction accounts for authed user.
-	return c.ListTransactionAccounts(newCtx, c.authedUser.ID)
+	return c.ListTransactionAccounts(
+		newCtx,
+		&ListTransactionAccountsOptions{userID: c.authedUser.ID},
+	)
 }
 
 // CreateTransactionAccountTransactionOptions defines the options for creating
 // a transaction in a transaction account.
 type CreateTransactionAccountTransactionOptions struct {
+	accountID    int     `json:"-"                       validator:"required"`
 	Date         string  `json:"date"`
 	Payee        string  `json:"payee"`
 	Amount       float64 `json:"amount"`
@@ -63,7 +85,6 @@ type CreateTransactionAccountTransactionOptions struct {
 // https://developers.pocketsmith.com/reference/post_transaction-accounts-id-transactions-1
 func (c *Client) CreateTransactionAccountTransaction(
 	ctx context.Context,
-	accountId int,
 	options *CreateTransactionAccountTransactionOptions,
 ) (transaction *Transaction, err error) {
 
@@ -72,18 +93,34 @@ func (c *Client) CreateTransactionAccountTransaction(
 		Start(ctx, "CreateTransactionAccountTransaction")
 	defer span.End()
 
+	// validate options.
+	if err := c.validator.StructCtx(newCtx, options); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to validate options: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// create transaction account transaction.
 	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodPost,
-		path:   fmt.Sprintf("/transaction_accounts/%v/transactions", accountId),
+		path:   fmt.Sprintf("/transaction_accounts/%v/transactions", options.accountID),
 		body:   options,
 	}, &transaction)
-	return transaction, err
+	if err != nil {
+		span.SetStatus(
+			codes.Error,
+			fmt.Sprintf("failed to create transaction account transaction: %v", err),
+		)
+		span.RecordError(err)
+		return nil, err
+	}
+	return transaction, nil
 }
 
 // ListTransactionAccountTransactionsOptions defines the options for listing
 // transactions in a transaction account.
 type ListTransactionAccountTransactionsOptions struct {
+	AccountID         string `json:"-"                            validator:"required"`
 	StartDate         string `json:"start_date,omitempty"`
 	EndDate           string `json:"end_date,omitempty"`
 	OnlyUncategorised int32  `json:"only_uncategorized,omitempty"`
@@ -95,7 +132,6 @@ type ListTransactionAccountTransactionsOptions struct {
 // https://developers.pocketsmith.com/reference/get_transaction-accounts-id-transactions-1
 func (c *Client) ListTransactionAccountTransactions(
 	ctx context.Context,
-	accountId int,
 	options *ListTransactionAccountTransactionsOptions,
 ) (transactions []Transaction, err error) {
 
@@ -104,10 +140,20 @@ func (c *Client) ListTransactionAccountTransactions(
 		Start(ctx, "ListTransactionAccountTransactions")
 	defer span.End()
 
+	// validate options.
+	if err := c.validator.StructCtx(newCtx, options); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to validate options: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// setup request.
 	sr := senderRequest{
 		method: http.MethodGet,
-		path:   fmt.Sprintf("/transaction_accounts/%v/transactions?per_page=100", accountId),
+		path: fmt.Sprintf(
+			"/transaction_accounts/%v/transactions?per_page=100",
+			options.AccountID,
+		),
 	}
 
 	// list transaction account transactions.
@@ -117,6 +163,11 @@ func (c *Client) ListTransactionAccountTransactions(
 		var batch []Transaction
 		resp, err := c.sender(newCtx, sr, &batch)
 		if err != nil {
+			span.SetStatus(
+				codes.Error,
+				fmt.Sprintf("failed to list transaction account transactions: %v", err),
+			)
+			span.RecordError(err)
 			return nil, err
 		}
 

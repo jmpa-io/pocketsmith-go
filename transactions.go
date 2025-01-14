@@ -6,11 +6,12 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/codes"
 )
 
 // UpdateTransactionOptions defines the options for updating a transaction.
 type UpdateTransactionOptions struct {
-	ID           int32   `json:"-"`
+	ID           int32   `json:"-"                       validator:"required"`
 	Labels       string  `json:"labels,omitempty"` // must be comma seperated list.
 	Payee        string  `json:"payee,omitempty"`
 	Amount       float64 `json:"amount,omitempty"`
@@ -33,11 +34,23 @@ func (c *Client) UpdateTransaction(
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "UpdateTransaction")
 	defer span.End()
 
+	// validate options.
+	if err := c.validator.StructCtx(newCtx, options); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to validate options: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	//  update transaction.
 	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodPut,
 		path:   fmt.Sprintf("/transactions/%v", options.ID),
 		body:   options,
 	}, &transaction)
-	return transaction, err
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to update transaction: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return transaction, nil
 }

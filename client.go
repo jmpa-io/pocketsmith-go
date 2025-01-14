@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/go-playground/validator/v10"
 	"go.opentelemetry.io/otel"
 )
 
@@ -26,8 +27,9 @@ type Client struct {
 	headers    http.Header // The headers passed to the http client when sending / receiving data from the endpoint.
 
 	// misc.
-	logLevel slog.Level   // The log level of the default logger.
-	logger   *slog.Logger // The logger used in this client (custom or default).
+	logLevel  slog.Level          // The log level of the default logger.
+	logger    *slog.Logger        // The logger used in this client (custom or default).
+	validator *validator.Validate // A validator for validating structs.
 
 	// metadata.
 	authedUser *User // the authed user attached to the token.
@@ -78,6 +80,9 @@ func New(ctx context.Context, token string, options ...Option) (*Client, error) 
 		}))
 
 	}
+
+	// setup validator.
+	c.validator = validator.New(validator.WithRequiredStructEnabled())
 
 	// setup headers.
 	headers := make(http.Header)
