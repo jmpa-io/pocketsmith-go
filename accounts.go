@@ -9,8 +9,12 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
+// Accounts represents a slice of Account.
+type Accounts []Account
+
 // CreateAccountOptions defines the options for creating an account for a user.
 type CreateAccountOptions struct {
+	UserID        int    `json:"-"`
 	InstitutionID int    `json:"institution_id"`
 	Title         string `json:"title"`
 	CurrencyCode  string `json:"currency_code"`
@@ -72,15 +76,17 @@ func (c *Client) DeleteAccount(ctx context.Context, accountId int) error {
 
 // ListAccounts, using the given user id, returns a list of account for a user.
 // https://developers.pocketsmith.com/reference#get_users-id-accounts.
-func (c *Client) ListAccounts(ctx context.Context, userId int) ([]Account, error) {
+func (c *Client) ListAccounts(
+	ctx context.Context,
+	userId int,
+) (accounts []Account, err error) {
 
 	// setup tracing.
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAccounts")
 	defer span.End()
 
 	// list accounts.
-	var accounts []Account
-	_, err := c.sender(newCtx, senderRequest{
+	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/users/%v/accounts", userId),
 	}, &accounts)
@@ -89,7 +95,7 @@ func (c *Client) ListAccounts(ctx context.Context, userId int) ([]Account, error
 
 // ListAccountsForAuthedUser, using the token attached to the client, returns a
 // list of accounts for the authed user.
-func (c *Client) ListAccountsForAuthedUser(ctx context.Context) ([]Account, error) {
+func (c *Client) ListAccountsForAuthedUser(ctx context.Context) (Accounts, error) {
 
 	// setup tracing.
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAccountsForAuthedUser")
@@ -119,7 +125,7 @@ func (c *Client) ListAccountTransactions(
 	ctx context.Context,
 	accountId int,
 	options *ListAccountTransactionsOptions,
-) (transactions []Transaction, err error) {
+) (transactions Transactions, err error) {
 
 	// setup tracing.
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAccountTransactions")
@@ -136,7 +142,7 @@ func (c *Client) ListAccountTransactions(
 	for {
 
 		// get respons
-		var batch []Transaction
+		var batch Transactions
 		resp, err := c.sender(newCtx, sr, &batch)
 		if err != nil {
 			return nil, err

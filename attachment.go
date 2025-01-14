@@ -3,7 +3,6 @@ package pocketsmith
 import "time"
 
 // Attachment defines a PocketSmith attachment.
-// https://developers.pocketsmith.com/reference#get_attachments-id
 type Attachment struct {
 	ID              int    `json:"id"`
 	Title           string `json:"title"`

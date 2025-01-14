@@ -8,6 +8,9 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
+// Attachments represents a slice of Attachment.
+type Attachments []Attachment
+
 // CreateAttachmentOptions defines the options for creating an attachment for a
 // user.
 type CreateAttachmentOptions struct {

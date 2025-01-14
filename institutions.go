@@ -8,6 +8,9 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
+// Institutions represents a slice of Institution.
+type Institutions []Institution
+
 // CreateInstitutionOptions defines the options for creating an institution.
 type CreateInstitutionOptions struct {
 	Title        string `json:"title"`
@@ -97,7 +100,9 @@ func (c *Client) ListInstitutions(
 
 // ListInstitutionsForAuthedUser, using the token attached to the client, lists
 // the institutions for the authed user.
-func (c *Client) ListInstitutionsForAuthedUser(ctx context.Context) ([]Institution, error) {
+func (c *Client) ListInstitutionsForAuthedUser(
+	ctx context.Context,
+) ([]Institution, error) {
 
 	// setup tracing.
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListInstitutionsForAuthedUser")

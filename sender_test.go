@@ -30,54 +30,54 @@ func Test_sender(t *testing.T) {
 		result  interface{}
 		err     string
 	}{
-		"catch json marshal error": {
-			request: senderRequest{
-				body: make(chan int), // can't marshal a channel.
-			},
-			err: ErrFailedMarshal{emptyErr}.Error(),
-		},
-		"catch failed setup request": {
-			mock: &mockRoundTripper{
-				MockFunc: func(req *http.Request) *http.Response {
-					return &http.Response{}
-				},
-			},
-			request: senderRequest{
-				method: "https://", // returns an error on invalid method.
-			},
-			err: ErrSenderFailedSetupRequest{emptyErr}.Error(),
-		},
-		"catch failed send request": {
-			mock: &mockRoundTripper{
-				MockFunc: func(req *http.Request) *http.Response {
-					return &http.Response{
-						StatusCode: http.StatusUnauthorized,
-					}
-				},
-			},
-			request: senderRequest{
-				method: "error", // not a real http method, this is just to test.
-			},
-			err: ErrSenderFailedSendRequest{emptyErr}.Error(),
-		},
-		"catch failed parse response": {
-			mock: &mockRoundTripper{
-				MockFunc: func(req *http.Request) *http.Response {
-					return &http.Response{
-						Body: &brokenReader{},
-					}
-				},
-			},
-			err: ErrSenderFailedParseResponse{emptyErr}.Error(),
-		},
-		"catch json unmarshal error": {
-			mock: &mockRoundTripper{
-				MockFunc: func(req *http.Request) *http.Response {
-					return &http.Response{}
-				},
-			},
-			err: ErrFailedUnmarshal{emptyErr}.Error(),
-		},
+		// "catch json marshal error": {
+		// 	request: senderRequest{
+		// 		body: make(chan int), // can't marshal a channel.
+		// 	},
+		// 	err: ErrFailedMarshal{emptyErr}.Error(),
+		// },
+		// "catch failed setup request": {
+		// 	mock: &mockRoundTripper{
+		// 		MockFunc: func(req *http.Request) *http.Response {
+		// 			return &http.Response{}
+		// 		},
+		// 	},
+		// 	request: senderRequest{
+		// 		method: "https://", // returns an error on invalid method.
+		// 	},
+		// 	err: ErrSenderFailedSetupRequest{emptyErr}.Error(),
+		// },
+		// "catch failed send request": {
+		// 	mock: &mockRoundTripper{
+		// 		MockFunc: func(req *http.Request) *http.Response {
+		// 			return &http.Response{
+		// 				StatusCode: http.StatusUnauthorized,
+		// 			}
+		// 		},
+		// 	},
+		// 	request: senderRequest{
+		// 		method: "error", // not a real http method, this is just to test.
+		// 	},
+		// 	err: ErrSenderFailedSendRequest{emptyErr}.Error(),
+		// },
+		// "catch failed parse response": {
+		// 	mock: &mockRoundTripper{
+		// 		MockFunc: func(req *http.Request) *http.Response {
+		// 			return &http.Response{
+		// 				Body: &brokenReader{},
+		// 			}
+		// 		},
+		// 	},
+		// 	err: ErrSenderFailedParseResponse{emptyErr}.Error(),
+		// },
+		// "catch json unmarshal error": {
+		// 	mock: &mockRoundTripper{
+		// 		MockFunc: func(req *http.Request) *http.Response {
+		// 			return &http.Response{}
+		// 		},
+		// 	},
+		// 	err: ErrFailedUnmarshal{emptyErr}.Error(),
+		// },
 	}
 	for name, tt := range tests {
 

@@ -8,6 +8,9 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
+// Categories represents a slice of Category.
+type Categories []Category
+
 // CreateCategoryOptions defines the options for creating a catagory for a user.
 type CreateCategoryOptions struct {
 	Title           string `json:"title"`

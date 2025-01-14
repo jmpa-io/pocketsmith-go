@@ -5,12 +5,12 @@ PROJECT=pocketsmith-go
 endif
 
 # Variables.
-TOKEN := $(shell aws ssm get-parameter --name "/tokens/pocketsmith" --query 'Parameter.Value' --output text --with-decryption)
+TOKEN = $(shell aws ssm get-parameter --name "/tokens/pocketsmith" --query 'Parameter.Value' --output text --with-decryption)
 
 # Targets.
-accounts: binary-go-accounts
-authed-user: binary-go-authed-user
-tracing: binary-go-tracing
+accounts: binary-go-accounts ## Builds the 'accounts' binary.
+authed-user: binary-go-authed-user ## Builds the 'authed-user' binary.
+tracing: binary-go-tracing ## Builds the `tracing` binary.
 run: accounts authed-user tracing
 
 PHONY += accounts authed-user tracing run
