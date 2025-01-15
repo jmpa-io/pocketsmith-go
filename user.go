@@ -43,7 +43,8 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// GetAuthedUser returns data about the user who owns the token used by this client.
+// GetAuthedUser returns the user from Pocketsmith who owns the token provided
+// to this client by anyone using this package.
 // https://developers.pocketsmith.com/reference/get_me-1.
 func (c *Client) GetAuthedUser(ctx context.Context) (user *User, err error) {
 
@@ -70,12 +71,13 @@ func (c *Client) GetAuthedUser(ctx context.Context) (user *User, err error) {
 	return user, nil
 }
 
-// GetUserOptions ...
+// GetUserOptions defines the options for retrieving a user from Pocketsmith,
+// by the given user id.
 type GetUserOptions struct {
-	ID int `json:"id" validator:"required"`
+	UserID int `json:"id" validator:"required"`
 }
 
-// GetUser returns data about a user, by their given user id.
+// GetUser returns a user from Pocketsmith, by the given user id.
 // https://developers.pocketsmith.com/reference/get_users-id-1.
 func (c *Client) GetUser(ctx context.Context, options *GetUserOptions) (user *User, err error) {
 
