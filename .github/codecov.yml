@@ -1,3 +1,5 @@
 ---
 ignore:
-  - cmd/example/
+  - cmd/accounts/
+  - cmd/authed-user/
+  - cmd/tracing/
