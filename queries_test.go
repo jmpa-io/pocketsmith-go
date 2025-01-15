@@ -8,11 +8,11 @@ import (
 
 func Test_setupQueries(t *testing.T) {
 	tests := map[string]struct {
-		queries map[string]string
+		queries *map[string]string
 		want    url.Values
 	}{
 		"setup queries": {
-			queries: map[string]string{
+			queries: &map[string]string{
 				"page_size": "10",
 				"hello":     "world",
 				"this is":   "a test",
