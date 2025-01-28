@@ -2,6 +2,14 @@
 version: 2
 updates:
 
+  # Update `GitHub Action` dependencies weekly.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "github-actions"]
+
   # Update `Go` dependencies daily.
   - package-ecosystem: gomod
     directory: /
@@ -10,10 +18,3 @@ updates:
     open-pull-requests-limit: 10
     labels: ["dependencies", "go"]
 
-  # Update `GitHub Action` dependencies weekly.
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-    open-pull-requests-limit: 10
-    labels: ["dependencies", "github-actions"]
