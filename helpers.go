@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"reflect"
 	"regexp"
+	"time"
 )
 
 // Ahe regex used to identify a rel in a http.Header.
@@ -38,4 +39,9 @@ func isNil(i interface{}) bool {
 		return reflect.ValueOf(i).IsNil()
 	}
 	return false
+}
+
+// parseDate parses a YYYY-MM-DD string into a time.Time.
+func parseDate(s string) (time.Time, error) {
+	return time.Parse("2006-01-02", s)
 }
