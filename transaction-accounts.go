@@ -163,6 +163,23 @@ func (c *Client) ListTransactionAccountTransactions(
 		return nil, err
 	}
 
+	// setup query params — only non-zero/non-empty values are included.
+	queryMap := map[string]string{
+		"start_date": options.StartDate,
+		"end_date":   options.EndDate,
+		"search":     options.Search,
+		"type":       string(options.Type),
+	}
+	if options.Uncategorised != 0 {
+		queryMap["only_uncategorized"] = fmt.Sprintf("%v", options.Uncategorised)
+	}
+	if options.NeedsReview != 0 {
+		queryMap["needs_review"] = fmt.Sprintf("%v", options.NeedsReview)
+	}
+	if !options.UpdatedSince.IsZero() {
+		queryMap["updated_since"] = options.UpdatedSince.Format(time.RFC3339)
+	}
+
 	// setup request.
 	sr := senderRequest{
 		method: http.MethodGet,
@@ -170,7 +187,7 @@ func (c *Client) ListTransactionAccountTransactions(
 			"/transaction_accounts/%v/transactions",
 			options.TransactionAccountID,
 		),
-		queries: setupQueries(nil),
+		queries: setupQueries(&queryMap),
 	}
 
 	// list transaction account transactions.
@@ -196,7 +213,11 @@ func (c *Client) ListTransactionAccountTransactions(
 		if next == "" {
 			break
 		}
+		// The next URL already contains all query params (page, filters etc).
+		// Clear sr.queries so sender doesn't overwrite them with the original
+		// page-1 params, which would cause an infinite loop on page 1.
 		sr.path = strings.Replace(next, c.endpoint, "", -1)
+		sr.queries = nil
 	}
 	return transactions, nil
 }
