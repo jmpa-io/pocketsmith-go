@@ -63,12 +63,12 @@ func (c *Client) ListEventsForUser(
 		return nil, err
 	}
 
-	// NOTE: the events API does not support per_page — pass dates directly in the path.
+	// NOTE: the events API does not support per_page — pass dates and per_page directly in the path.
 	var events Events
 	_, err := c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
 		path: fmt.Sprintf(
-			"/users/%v/events?start_date=%s&end_date=%s",
+			"/users/%v/events?start_date=%s&end_date=%s&per_page=100",
 			options.UserID, options.StartDate, options.EndDate,
 		),
 	}, &events)
