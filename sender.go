@@ -42,17 +42,20 @@ func (c *Client) sender(
 	_, span := otel.Tracer(c.tracerName).Start(ctx, "sender")
 	defer span.End()
 
-	// marshal body.
-	var body []byte
+	// marshal body — only allocate a reader when there is actually a body to
+	// send. Passing nil to http.NewRequest is valid and avoids a heap
+	// allocation on every GET/DELETE.
+	var bodyReader io.Reader
 	if !isNil(sr.body) {
-		body, err = json.Marshal(sr.body)
+		b, err := json.Marshal(sr.body)
 		if err != nil {
 			return nil, ErrFailedMarshal{err}
 		}
+		bodyReader = bytes.NewReader(b)
 	}
 
 	// setup request.
-	req, err := http.NewRequest(sr.method, c.endpoint+sr.path, bytes.NewReader(body))
+	req, err := http.NewRequest(sr.method, c.endpoint+sr.path, bodyReader)
 	if err != nil {
 		return nil, ErrSenderFailedSetupRequest{err}
 	}
@@ -60,8 +63,11 @@ func (c *Client) sender(
 		req.URL.RawQuery = sr.queries.Encode()
 	}
 
-	// add headers to request.
-	req.Header = c.headers
+	// clone the shared headers map onto the request. c.headers is set once at
+	// client initialisation and never mutated, but net/http may read/write the
+	// Header map on concurrent Do() calls, so we must give each request its
+	// own copy to prevent a data race.
+	req.Header = c.headers.Clone()
 
 	// send request.
 	resp, err = c.httpClient.Do(req)

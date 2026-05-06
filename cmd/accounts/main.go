@@ -25,9 +25,9 @@ func main() {
 	}
 
 	// get accounts.
-	accounts, err := c.ListAccountsForAuthedUser(ctx)
+	accounts, err := c.ListAccounts(ctx)
 	if err != nil {
-		fmt.Printf("failed to get accounts for authed user: %v\n", err)
+		fmt.Printf("failed to get accounts: %v\n", err)
 		os.Exit(1)
 	}
 	for i, account := range accounts {

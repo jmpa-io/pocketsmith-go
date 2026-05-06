@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 )
+
+// defaultPageWorkers is the default number of concurrent page-fetch goroutines
+// used by fetchAllPages. Pocketsmith's rate limit is 5000 requests/hour;
+// 10 concurrent workers is conservative and safe.
+const defaultPageWorkers = 10
 
 // TransactionAccounts represents a slice of TransactionAccount.
 type TransactionAccounts []TransactionAccount
@@ -45,7 +49,7 @@ func (c *Client) ListTransactionAccountsForUser(
 		path:   fmt.Sprintf("/users/%v/transaction_accounts", options.UserID),
 	}, &accounts)
 	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("failed to get user: %v", err))
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to list transaction accounts: %v", err))
 		span.RecordError(err)
 		return nil, err
 	}
@@ -62,10 +66,16 @@ func (c *Client) ListTransactionAccounts(ctx context.Context) (TransactionAccoun
 	defer span.End()
 
 	// list transaction accounts for authed user.
-	return c.ListTransactionAccountsForUser(
+	accounts, err := c.ListTransactionAccountsForUser(
 		newCtx,
 		&ListTransactionAccountsForUserOptions{UserID: c.authedUser.ID},
 	)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to list transaction accounts: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return accounts, nil
 }
 
 // CreateTransactionAccountTransactionOptions defines the options for creating
@@ -74,7 +84,7 @@ func (c *Client) ListTransactionAccounts(ctx context.Context) (TransactionAccoun
 type CreateTransactionAccountTransactionOptions struct {
 	TransactionAccountID int     `json:"-"                       validator:"required"`
 	Payee                string  `json:"payee"                   validator:"required"`
-	Amount               float64 `json:"amount"                  validator:"required"`
+	Amount               float64 `json:"amount"` // no validator:"required" — 0.00 is a valid amount
 	Date                 string  `json:"date"                    validator:"required"` //TODO: should this be customTime?
 	IsTransfer           bool    `json:"is_transfer,omitempty"`
 	Labels               string  `json:"labels,omitempty"` // must be comma seperated. // TODO: should this be a []string or a custom type?
@@ -129,8 +139,8 @@ const (
 	ListTransactionAccountTransactionsOptionTypeCredit ListTransactionAccountTransactionsOptionType = "credit"
 )
 
-// ListTra609534nsactionAccountTransactionsOptions defines the options for l
-// isting transactions in a transaction account from Pocketsmith, by the
+// ListTransactionAccountTransactionsOptions defines the options for listing
+// transactions in a transaction account from Pocketsmith, by the
 // transaction account id.
 type ListTransactionAccountTransactionsOptions struct {
 	TransactionAccountID string                                       `json:"-"                       validator:"required"`
@@ -171,7 +181,7 @@ func (c *Client) ListTransactionAccountTransactions(
 		"type":       string(options.Type),
 	}
 	if options.Uncategorised != 0 {
-		queryMap["only_uncategorized"] = fmt.Sprintf("%v", options.Uncategorised)
+		queryMap["uncategorised"] = fmt.Sprintf("%v", options.Uncategorised)
 	}
 	if options.NeedsReview != 0 {
 		queryMap["needs_review"] = fmt.Sprintf("%v", options.NeedsReview)
@@ -190,34 +200,15 @@ func (c *Client) ListTransactionAccountTransactions(
 		queries: setupQueries(&queryMap),
 	}
 
-	// list transaction account transactions.
-	for {
-
-		// get batch.
-		var batch []Transaction
-		resp, err := c.sender(newCtx, sr, &batch)
-		if err != nil {
-			span.SetStatus(
-				codes.Error,
-				fmt.Sprintf("failed to list transaction account transactions: %v", err),
-			)
-			span.RecordError(err)
-			return nil, err
-		}
-
-		// extract batch data.
-		transactions = append(transactions, batch...)
-
-		// paginate?
-		next := getHeader(resp.Header, "next")
-		if next == "" {
-			break
-		}
-		// The next URL already contains all query params (page, filters etc).
-		// Clear sr.queries so sender doesn't overwrite them with the original
-		// page-1 params, which would cause an infinite loop on page 1.
-		sr.path = strings.Replace(next, c.endpoint, "", -1)
-		sr.queries = nil
+	// list transaction account transactions concurrently across all pages.
+	transactions, err = fetchAllPages[Transaction](newCtx, c, sr, defaultPageWorkers)
+	if err != nil {
+		span.SetStatus(
+			codes.Error,
+			fmt.Sprintf("failed to list transaction account transactions: %v", err),
+		)
+		span.RecordError(err)
+		return nil, err
 	}
 	return transactions, nil
 }
