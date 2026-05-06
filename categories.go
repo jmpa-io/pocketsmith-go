@@ -74,10 +74,15 @@ func (c *Client) CreateCategory(
 	defer span.End()
 
 	// create category for authed user.
-	return c.CreateCategoryForUser(newCtx, &CreateCategoryForUserOptions{
+	if err := c.CreateCategoryForUser(newCtx, &CreateCategoryForUserOptions{
 		UserID:                c.authedUser.ID,
 		CreateCategoryOptions: *options,
-	})
+	}); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to create category: %v", err))
+		span.RecordError(err)
+		return err
+	}
+	return nil
 }
 
 // DeleteCategoryOptions ...
@@ -158,7 +163,13 @@ func (c *Client) ListCategories(ctx context.Context) (Categories, error) {
 	defer span.End()
 
 	// list categories for authed user.
-	return c.ListCategoriesForUser(newCtx, &ListCategoriesForUserOptions{UserID: c.authedUser.ID})
+	categories, err := c.ListCategoriesForUser(newCtx, &ListCategoriesForUserOptions{UserID: c.authedUser.ID})
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to list categories: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return categories, nil
 }
 
 // GetCategoryByTitle ...
@@ -228,11 +239,17 @@ func (c *Client) GetCategoryByTitle(
 	defer span.End()
 
 	// get category by title.
-	return c.GetCategoryByTitleForUser(
+	cat, err := c.GetCategoryByTitleForUser(
 		newCtx,
 		&GetCategoryByTitleForUserOptions{
 			UserID:                    c.authedUser.ID,
 			GetCategoryByTitleOptions: *options,
 		},
 	)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get category by title: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return cat, nil
 }

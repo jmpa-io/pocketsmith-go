@@ -63,15 +63,16 @@ func (c *Client) ListEventsForUser(
 		return nil, err
 	}
 
-	// NOTE: the events API does not support per_page — pass dates and per_page directly in the path.
-	var events Events
-	_, err := c.sender(newCtx, senderRequest{
+	sr := senderRequest{
 		method: http.MethodGet,
-		path: fmt.Sprintf(
-			"/users/%v/events?start_date=%s&end_date=%s&per_page=100",
-			options.UserID, options.StartDate, options.EndDate,
-		),
-	}, &events)
+		path:   fmt.Sprintf("/users/%v/events", options.UserID),
+		queries: setupQueries(&map[string]string{
+			"start_date": options.StartDate,
+			"end_date":   options.EndDate,
+		}),
+	}
+
+	events, err := fetchAllPages[Event](newCtx, c, sr, defaultPageWorkers)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("failed to list events: %v", err))
 		span.RecordError(err)
@@ -84,11 +85,17 @@ func (c *Client) ListEventsForUser(
 func (c *Client) ListEvents(ctx context.Context, options *ListEventsOptions) (Events, error) {
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListEvents")
 	defer span.End()
-	return c.ListEventsForUser(newCtx, &ListEventsForUserOptions{
+	events, err := c.ListEventsForUser(newCtx, &ListEventsForUserOptions{
 		UserID:    c.authedUser.ID,
 		StartDate: options.StartDate,
 		EndDate:   options.EndDate,
 	})
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to list events: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return events, nil
 }
 
 // ---
@@ -99,7 +106,7 @@ func (c *Client) ListEvents(ctx context.Context, options *ListEventsOptions) (Ev
 type CreateEventOptions struct {
 	ScenarioID     int     `json:"-"                validator:"required"`
 	CategoryID     int32   `json:"category_id"      validator:"required"`
-	Amount         float64 `json:"amount"           validator:"required"` // negative = expense, positive = income
+	Amount         float64 `json:"amount"` // no validator:"required" — 0.00 is a valid amount; negative = expense, positive = income
 	Date           string  `json:"date"             validator:"required"` // YYYY-MM-DD, start date of the series
 	RepeatType     string  `json:"repeat_type"`     // once, daily, weekly, fortnightly, monthly, yearly
 	RepeatInterval int     `json:"repeat_interval"` // e.g. 1 for every month

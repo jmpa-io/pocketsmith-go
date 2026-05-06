@@ -21,11 +21,12 @@ func Test_setupQueries(t *testing.T) {
 				"page_size": []string{"10"},
 				"hello":     []string{"world"},
 				"this is":   []string{"a test"},
+				"per_page":  []string{"1000"},
 			},
 		},
-		"check defaults page size": {
+		"check default per_page": {
 			want: url.Values{
-				"page_size": []string{"100"},
+				"per_page": []string{"1000"},
 			},
 		},
 	}

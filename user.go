@@ -95,8 +95,7 @@ func (c *Client) GetUser(ctx context.Context, options *GetUserOptions) (user *Us
 	// get user.
 	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
-		path:   "/users/id",
-		body:   options,
+		path:   fmt.Sprintf("/users/%v", options.UserID),
 	}, &user)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("failed to get user: %v", err))

@@ -71,13 +71,19 @@ func (c *Client) CreateInstitution(
 	defer span.End()
 
 	// create Institution for authed user.
-	return c.CreateInstitutionForUser(
+	inst, err := c.CreateInstitutionForUser(
 		newCtx,
 		&CreateInstitutionOptionsForUser{
 			UserID:                   c.authedUser.ID,
 			CreateInstitutionOptions: *options,
 		},
 	)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to create institution: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return inst, nil
 }
 
 // DeleteInstitutionOptions defines the options for deleteing an institution.
@@ -147,7 +153,12 @@ func (c *Client) ListInstitutionsForUser(
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/users/%v/institutions", options.UserID),
 	}, &institutions)
-	return institutions, err
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to list institutions: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return institutions, nil
 }
 
 // ListInstitutions, using the token attached to the client, lists
@@ -161,5 +172,11 @@ func (c *Client) ListInstitutions(
 	defer span.End()
 
 	// list institutions for authed user.
-	return c.ListInstitutionsForUser(newCtx, &ListInstitutionsForUser{UserID: c.authedUser.ID})
+	institutions, err := c.ListInstitutionsForUser(newCtx, &ListInstitutionsForUser{UserID: c.authedUser.ID})
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to list institutions: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return institutions, nil
 }
