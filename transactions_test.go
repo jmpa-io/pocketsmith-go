@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -16,14 +17,27 @@ func Test_GetTransaction(t *testing.T) {
 		want    *Transaction
 		err     string
 	}{
-		"success — returns transaction": {
+		"success — returns full transaction": {
 			options: &GetTransactionOptions{TransactionID: 42},
 			mockFn: func(req *http.Request) *http.Response {
+				// verify correct path
+				if !strings.Contains(req.URL.Path, "/transactions/42") {
+					t.Errorf("GetTransaction() path = %q, want to contain /transactions/42", req.URL.Path)
+				}
+				if req.Method != http.MethodGet {
+					t.Errorf("GetTransaction() method = %q, want GET", req.Method)
+				}
 				tx := Transaction{
 					ID:     42,
 					Payee:  "Coles Supermarket",
 					Amount: -55.30,
 					Date:   "2026-05-10",
+					Note:   "⏰ 2026-05-10T20:29+10:00",
+					Labels: []string{"Groceries", "Snack"},
+					Category: Category{
+						ID:    8973822,
+						Title: "04 | 🥗 | Food",
+					},
 				}
 				b, _ := json.Marshal(tx)
 				return &http.Response{
@@ -37,20 +51,13 @@ func Test_GetTransaction(t *testing.T) {
 				Payee:  "Coles Supermarket",
 				Amount: -55.30,
 				Date:   "2026-05-10",
+				Note:   "⏰ 2026-05-10T20:29+10:00",
+				Labels: []string{"Groceries", "Snack"},
+				Category: Category{
+					ID:    8973822,
+					Title: "04 | 🥗 | Food",
+				},
 			},
-		},
-		"success — returns empty transaction for id zero (no validation)": {
-			options: &GetTransactionOptions{TransactionID: 0},
-			mockFn: func(req *http.Request) *http.Response {
-				tx := Transaction{ID: 0}
-				b, _ := json.Marshal(tx)
-				return &http.Response{
-					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
-					Header:     make(http.Header),
-				}
-			},
-			want: &Transaction{ID: 0},
 		},
 		"api error — not found": {
 			options: &GetTransactionOptions{TransactionID: 9999},
@@ -70,11 +77,10 @@ func Test_GetTransaction(t *testing.T) {
 		tt := tt
 		t.Run(name, func(t *testing.T) {
 			c := newMethodClient(t, tt.mockFn)
-
 			got, err := c.GetTransaction(context.Background(), tt.options)
 			if tt.err != "" {
 				if err == nil {
-					t.Fatalf("GetTransaction() expected error containing %q, got nil", tt.err)
+					t.Fatalf("GetTransaction() expected error %q, got nil", tt.err)
 				}
 				if !containsStr(err.Error(), tt.err) {
 					t.Fatalf("GetTransaction() error = %q, want substring %q", err.Error(), tt.err)
@@ -85,13 +91,31 @@ func Test_GetTransaction(t *testing.T) {
 				t.Fatalf("GetTransaction() unexpected error: %v", err)
 			}
 			if got.ID != tt.want.ID {
-				t.Errorf("GetTransaction().ID = %d, want %d", got.ID, tt.want.ID)
+				t.Errorf("ID = %d, want %d", got.ID, tt.want.ID)
 			}
 			if got.Payee != tt.want.Payee {
-				t.Errorf("GetTransaction().Payee = %q, want %q", got.Payee, tt.want.Payee)
+				t.Errorf("Payee = %q, want %q", got.Payee, tt.want.Payee)
 			}
 			if got.Amount != tt.want.Amount {
-				t.Errorf("GetTransaction().Amount = %.2f, want %.2f", got.Amount, tt.want.Amount)
+				t.Errorf("Amount = %.2f, want %.2f", got.Amount, tt.want.Amount)
+			}
+			if got.Date != tt.want.Date {
+				t.Errorf("Date = %q, want %q", got.Date, tt.want.Date)
+			}
+			if got.Note != tt.want.Note {
+				t.Errorf("Note = %q, want %q", got.Note, tt.want.Note)
+			}
+			if len(got.Labels) != len(tt.want.Labels) {
+				t.Errorf("Labels len = %d, want %d", len(got.Labels), len(tt.want.Labels))
+			} else {
+				for i, l := range got.Labels {
+					if l != tt.want.Labels[i] {
+						t.Errorf("Labels[%d] = %q, want %q", i, l, tt.want.Labels[i])
+					}
+				}
+			}
+			if got.Category.ID != tt.want.Category.ID {
+				t.Errorf("Category.ID = %d, want %d", got.Category.ID, tt.want.Category.ID)
 			}
 		})
 	}
@@ -110,11 +134,20 @@ func Test_UpdateTransaction(t *testing.T) {
 				Payee:         "Coles Express",
 			},
 			mockFn: func(req *http.Request) *http.Response {
-				tx := Transaction{
-					ID:    42,
-					Payee: "Coles Express",
-					Date:  "2026-05-10",
+				// verify method and path
+				if req.Method != http.MethodPut {
+					t.Errorf("UpdateTransaction() method = %q, want PUT", req.Method)
 				}
+				if !strings.Contains(req.URL.Path, "/transactions/42") {
+					t.Errorf("UpdateTransaction() path = %q, want to contain /transactions/42", req.URL.Path)
+				}
+				// verify request body contains the new payee
+				var body map[string]any
+				json.NewDecoder(req.Body).Decode(&body)
+				if body["payee"] != "Coles Express" {
+					t.Errorf("request body payee = %v, want Coles Express", body["payee"])
+				}
+				tx := Transaction{ID: 42, Payee: "Coles Express", Amount: -55.30, Date: "2026-05-10"}
 				b, _ := json.Marshal(tx)
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -122,21 +155,29 @@ func Test_UpdateTransaction(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			},
-			want: &Transaction{
-				ID:    42,
-				Payee: "Coles Express",
-			},
+			want: &Transaction{ID: 42, Payee: "Coles Express", Amount: -55.30, Date: "2026-05-10"},
 		},
-		"success — updates labels": {
+		"success — updates note and labels": {
 			options: &UpdateTransactionOptions{
 				TransactionID: 42,
-				Labels:        "groceries,weekly",
+				Note:          "⏰ 2026-05-10T20:29+10:00",
+				Labels:        "Groceries,Snack",
 			},
 			mockFn: func(req *http.Request) *http.Response {
+				// verify request body contains note and labels
+				var body map[string]any
+				json.NewDecoder(req.Body).Decode(&body)
+				if body["note"] != "⏰ 2026-05-10T20:29+10:00" {
+					t.Errorf("request body note = %v, want timestamp", body["note"])
+				}
+				if body["labels"] != "Groceries,Snack" {
+					t.Errorf("request body labels = %v, want Groceries,Snack", body["labels"])
+				}
 				tx := Transaction{
 					ID:     42,
 					Payee:  "Coles Supermarket",
-					Labels: []string{"groceries", "weekly"},
+					Note:   "⏰ 2026-05-10T20:29+10:00",
+					Labels: []string{"Groceries", "Snack"},
 				}
 				b, _ := json.Marshal(tx)
 				return &http.Response{
@@ -148,13 +189,26 @@ func Test_UpdateTransaction(t *testing.T) {
 			want: &Transaction{
 				ID:     42,
 				Payee:  "Coles Supermarket",
-				Labels: []string{"groceries", "weekly"},
+				Note:   "⏰ 2026-05-10T20:29+10:00",
+				Labels: []string{"Groceries", "Snack"},
 			},
 		},
-		"zero transaction id — passes through (no validation)": {
-			options: &UpdateTransactionOptions{TransactionID: 0},
+		"success — updates category": {
+			options: &UpdateTransactionOptions{
+				TransactionID: 42,
+				CategoryID:    func() *int32 { v := int32(8973822); return &v }(),
+			},
 			mockFn: func(req *http.Request) *http.Response {
-				tx := Transaction{ID: 0}
+				var body map[string]any
+				json.NewDecoder(req.Body).Decode(&body)
+				if body["category_id"] == nil {
+					t.Error("request body missing category_id")
+				}
+				tx := Transaction{
+					ID:       42,
+					Payee:    "Coles Supermarket",
+					Category: Category{ID: 8973822, Title: "04 | 🥗 | Food"},
+				}
 				b, _ := json.Marshal(tx)
 				return &http.Response{
 					StatusCode: http.StatusOK,
@@ -162,7 +216,11 @@ func Test_UpdateTransaction(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			},
-			want: &Transaction{ID: 0},
+			want: &Transaction{
+				ID:       42,
+				Payee:    "Coles Supermarket",
+				Category: Category{ID: 8973822, Title: "04 | 🥗 | Food"},
+			},
 		},
 		"api error — returns error": {
 			options: &UpdateTransactionOptions{TransactionID: 42, Payee: "bad"},
@@ -182,11 +240,10 @@ func Test_UpdateTransaction(t *testing.T) {
 		tt := tt
 		t.Run(name, func(t *testing.T) {
 			c := newMethodClient(t, tt.mockFn)
-
 			got, err := c.UpdateTransaction(context.Background(), tt.options)
 			if tt.err != "" {
 				if err == nil {
-					t.Fatalf("UpdateTransaction() expected error containing %q, got nil", tt.err)
+					t.Fatalf("UpdateTransaction() expected error %q, got nil", tt.err)
 				}
 				if !containsStr(err.Error(), tt.err) {
 					t.Fatalf("UpdateTransaction() error = %q, want substring %q", err.Error(), tt.err)
@@ -197,10 +254,25 @@ func Test_UpdateTransaction(t *testing.T) {
 				t.Fatalf("UpdateTransaction() unexpected error: %v", err)
 			}
 			if got.ID != tt.want.ID {
-				t.Errorf("UpdateTransaction().ID = %d, want %d", got.ID, tt.want.ID)
+				t.Errorf("ID = %d, want %d", got.ID, tt.want.ID)
 			}
 			if got.Payee != tt.want.Payee {
-				t.Errorf("UpdateTransaction().Payee = %q, want %q", got.Payee, tt.want.Payee)
+				t.Errorf("Payee = %q, want %q", got.Payee, tt.want.Payee)
+			}
+			if got.Note != tt.want.Note {
+				t.Errorf("Note = %q, want %q", got.Note, tt.want.Note)
+			}
+			if len(got.Labels) != len(tt.want.Labels) {
+				t.Errorf("Labels len = %d, want %d", len(got.Labels), len(tt.want.Labels))
+			} else {
+				for i, l := range got.Labels {
+					if l != tt.want.Labels[i] {
+						t.Errorf("Labels[%d] = %q, want %q", i, l, tt.want.Labels[i])
+					}
+				}
+			}
+			if got.Category.ID != tt.want.Category.ID {
+				t.Errorf("Category.ID = %d, want %d", got.Category.ID, tt.want.Category.ID)
 			}
 		})
 	}
