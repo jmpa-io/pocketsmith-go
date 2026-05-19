@@ -28,3 +28,14 @@ func WithHttpClient(httpClient iHttpClient) Option {
 		return nil
 	}
 }
+
+// WithSkipAuthCheck disables the GetAuthedUser call that normally happens at
+// client startup. Use this when the PocketSmith API may be unreachable at
+// init time (e.g. restrictive corporate networks). Tools will still fail
+// gracefully if the API is unreachable when they are called.
+func WithSkipAuthCheck() Option {
+	return func(c *Client) error {
+		c.skipAuthCheck = true
+		return nil
+	}
+}
