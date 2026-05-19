@@ -23,9 +23,10 @@ type Client struct {
 	tracerName string // The name of the tracer output in the traces.
 
 	// config.
-	endpoint   string      // The endpoint to query against.
-	httpClient iHttpClient // The http client used when sending / receiving data from the endpoint.
-	headers    http.Header // The headers passed to the http client when sending / receiving data from the endpoint.
+	endpoint      string      // The endpoint to query against.
+	httpClient    iHttpClient // The http client used when sending / receiving data from the endpoint.
+	headers       http.Header // The headers passed to the http client when sending / receiving data from the endpoint.
+	skipAuthCheck bool        // Skip the GetAuthedUser call on startup (useful when API is unreachable).
 
 	// misc.
 	logLevel  slog.Level          // The log level of the default logger.
@@ -105,9 +106,13 @@ func New(ctx context.Context, token string, options ...Option) (*Client, error) 
 	c.headers = headers
 
 	// retrieve authed user, to determine if the token is valid.
-	var err error
-	if c.authedUser, err = c.GetAuthedUser(newCtx); err != nil {
-		return nil, ErrClientFailedToGetAuthedUser{err}
+	// Skipped if WithSkipAuthCheck was used — useful when the API is
+	// unreachable at startup (e.g. restrictive corporate networks).
+	if !c.skipAuthCheck {
+		var err error
+		if c.authedUser, err = c.GetAuthedUser(newCtx); err != nil {
+			return nil, ErrClientFailedToGetAuthedUser{err}
+		}
 	}
 
 	c.logger.Debug("client setup successfully")
