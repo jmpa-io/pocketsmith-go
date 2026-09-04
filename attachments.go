@@ -22,7 +22,7 @@ type CreateAttachmentOptions struct {
 
 // CreateAttachmentForUserOptions ...
 type CreateAttachmentForUserOptions struct {
-	UserID int `json:"-" validator:"required"`
+	UserID int `json:"-" validate:"required"`
 
 	CreateAttachmentOptions
 }
@@ -70,10 +70,17 @@ func (c *Client) CreateAttachment(
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateAttachment")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// create attachment for user.
 	attachment, err := c.CreateAttachmentForUser(
 		newCtx,
-		&CreateAttachmentForUserOptions{UserID: c.authedUser.ID, CreateAttachmentOptions: *options},
+		&CreateAttachmentForUserOptions{UserID: userID, CreateAttachmentOptions: *options},
 	)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("failed to create attachment: %v", err))
@@ -85,7 +92,7 @@ func (c *Client) CreateAttachment(
 
 // DeleteAttachmentOptions ...
 type DeleteAttachmentOptions struct {
-	AttachmentID int `validator:"required"`
+	AttachmentID int `validate:"required"`
 }
 
 // DeleteAttachment, using the given attachment id, deletes an attachment.
@@ -127,7 +134,7 @@ type ListAttachmentsOptions struct {
 
 // ListAttachmentsForUsersOptions ...
 type ListAttachmentsForUserOptions struct {
-	UserID int `json:"-" validator:"required"`
+	UserID int `json:"-" validate:"required"`
 
 	ListAttachmentsOptions
 }
@@ -180,10 +187,17 @@ func (c *Client) ListAttachments(
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAttachmentsForAuthedUser")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// list attachments.
 	attachments, err := c.ListAttachmentsForUser(
 		newCtx,
-		&ListAttachmentsForUserOptions{UserID: c.authedUser.ID, ListAttachmentsOptions: *options},
+		&ListAttachmentsForUserOptions{UserID: userID, ListAttachmentsOptions: *options},
 	)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("failed to list attachments: %v", err))
@@ -196,8 +210,8 @@ func (c *Client) ListAttachments(
 // AssignAttachmentToTransactionOptions defines the options for assigning an
 // attachment to a transaction.
 type AssignAttachmentToTransactionOptions struct {
-	TransactionID int32 `json:"-"             validator:"required"`
-	AttachmentID  int   `json:"attachment_id" validator:"required"`
+	TransactionID int32 `json:"-"             validate:"required"`
+	AttachmentID  int   `json:"attachment_id" validate:"required"`
 }
 
 // AssignAttachmentToTransaction assigns an attachment to a transaction.

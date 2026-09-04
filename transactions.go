@@ -15,7 +15,7 @@ type Transactions []Transaction
 // GetTransactionOptions defines the options for retrieving a single
 // transaction from Pocketsmith by its ID.
 type GetTransactionOptions struct {
-	TransactionID int32 `json:"-" validator:"required"`
+	TransactionID int32 `json:"-" validate:"required"`
 }
 
 // GetTransaction retrieves a single transaction from Pocketsmith by its ID.
@@ -53,7 +53,7 @@ func (c *Client) GetTransaction(
 // (e.g. Amount=0.00, CategoryID=0 to un-assign, IsTransfer=false to un-mark).
 // Nil pointer means "do not update this field".
 type UpdateTransactionOptions struct {
-	TransactionID int32    `json:"-"                       validator:"required"`
+	TransactionID int32    `json:"-"                       validate:"required"`
 	Labels        string   `json:"labels,omitempty"`        // comma-separated list; use ClearLabels=true to first clear all existing labels
 	ClearLabels   bool     `json:"-"`                       // if true, send labels="" before setting Labels (avoids Pocketsmith dormant-record bug)
 	Payee         string   `json:"payee,omitempty"`

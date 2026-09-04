@@ -20,6 +20,8 @@ func (e ErrClientFailedToSetOption) Error() string {
 	return fmt.Sprintf("failed to set option in client: %v", e.err)
 }
 
+func (e ErrClientFailedToSetOption) Unwrap() error { return e.err }
+
 // ErrClientFailedToGetAuthedUser is returned when the client fails to get the
 // authed user when setting up the client.
 type ErrClientFailedToGetAuthedUser struct {
@@ -29,3 +31,5 @@ type ErrClientFailedToGetAuthedUser struct {
 func (e ErrClientFailedToGetAuthedUser) Error() string {
 	return fmt.Sprintf("failed to get authed user in client: %v", e.err)
 }
+
+func (e ErrClientFailedToGetAuthedUser) Unwrap() error { return e.err }

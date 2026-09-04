@@ -37,15 +37,15 @@ type Events []Event
 
 // ListEventsForUserOptions defines options for listing forecast events.
 type ListEventsForUserOptions struct {
-	UserID    int    `json:"-"          validator:"required"`
-	StartDate string `json:"start_date" validator:"required"`
-	EndDate   string `json:"end_date"   validator:"required"`
+	UserID    int    `json:"-"          validate:"required"`
+	StartDate string `json:"start_date" validate:"required"`
+	EndDate   string `json:"end_date"   validate:"required"`
 }
 
 // ListEventsOptions defines options for listing forecast events for the authed user.
 type ListEventsOptions struct {
-	StartDate string `json:"start_date" validator:"required"`
-	EndDate   string `json:"end_date"   validator:"required"`
+	StartDate string `json:"start_date" validate:"required"`
+	EndDate   string `json:"end_date"   validate:"required"`
 }
 
 // ListEventsForUser lists all forecast events for a user within a date range.
@@ -85,8 +85,16 @@ func (c *Client) ListEventsForUser(
 func (c *Client) ListEvents(ctx context.Context, options *ListEventsOptions) (Events, error) {
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListEvents")
 	defer span.End()
+
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	events, err := c.ListEventsForUser(newCtx, &ListEventsForUserOptions{
-		UserID:    c.authedUser.ID,
+		UserID:    userID,
 		StartDate: options.StartDate,
 		EndDate:   options.EndDate,
 	})
@@ -104,10 +112,10 @@ func (c *Client) ListEvents(ctx context.Context, options *ListEventsOptions) (Ev
 
 // CreateEventOptions defines options for creating a forecast event.
 type CreateEventOptions struct {
-	ScenarioID     int     `json:"-"                validator:"required"`
-	CategoryID     int32   `json:"category_id"      validator:"required"`
-	Amount         float64 `json:"amount"` // no validator:"required" — 0.00 is a valid amount; negative = expense, positive = income
-	Date           string  `json:"date"             validator:"required"` // YYYY-MM-DD, start date of the series
+	ScenarioID     int     `json:"-"                validate:"required"`
+	CategoryID     int32   `json:"category_id"      validate:"required"`
+	Amount         float64 `json:"amount"` // no validate:"required" — 0.00 is a valid amount; negative = expense, positive = income
+	Date           string  `json:"date"             validate:"required"` // YYYY-MM-DD, start date of the series
 	RepeatType     string  `json:"repeat_type"`     // once, daily, weekly, fortnightly, monthly, yearly
 	RepeatInterval int     `json:"repeat_interval"` // e.g. 1 for every month
 	InfiniteSeries bool    `json:"infinite_series"`
@@ -174,8 +182,8 @@ const (
 
 // UpdateEventOptions defines options for updating a forecast event.
 type UpdateEventOptions struct {
-	EventID    string               `json:"-"          validator:"required"`
-	Behaviour  UpdateEventBehaviour `json:"behaviour"  validator:"required"`
+	EventID    string               `json:"-"          validate:"required"`
+	Behaviour  UpdateEventBehaviour `json:"behaviour"  validate:"required"`
 	Amount     *float64             `json:"amount,omitempty"`
 	Date       string               `json:"date,omitempty"`
 	Note       string               `json:"note,omitempty"`
@@ -230,8 +238,8 @@ const (
 
 // DeleteEventOptions defines options for deleting a forecast event.
 type DeleteEventOptions struct {
-	EventID   string               `json:"-"         validator:"required"`
-	Behaviour DeleteEventBehaviour `json:"behaviour" validator:"required"`
+	EventID   string               `json:"-"         validate:"required"`
+	Behaviour DeleteEventBehaviour `json:"behaviour" validate:"required"`
 }
 
 // DeleteEvent deletes a forecast event (or series).
@@ -313,10 +321,17 @@ func (c *Client) GetBudget(ctx context.Context) ([]BudgetItem, error) {
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "GetBudget")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	var items []BudgetItem
-	_, err := c.sender(newCtx, senderRequest{
+	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
-		path:   fmt.Sprintf("/users/%v/budget", c.authedUser.ID),
+		path:   fmt.Sprintf("/users/%v/budget", userID),
 	}, &items)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("failed to get budget: %v", err))
@@ -328,8 +343,8 @@ func (c *Client) GetBudget(ctx context.Context) ([]BudgetItem, error) {
 
 // GetBudgetSummaryOptions defines options for getting a budget summary over a date range.
 type GetBudgetSummaryOptions struct {
-	StartDate string `json:"start_date" validator:"required"`
-	EndDate   string `json:"end_date"   validator:"required"`
+	StartDate string `json:"start_date" validate:"required"`
+	EndDate   string `json:"end_date"   validate:"required"`
 	Period    string `json:"period"`   // months, weeks, years, days
 	Interval  int    `json:"interval"` // e.g. 1
 	RollUp    bool   `json:"roll_up"`
@@ -356,6 +371,13 @@ func (c *Client) GetBudgetSummary(
 		return nil, err
 	}
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	period := options.Period
 	if period == "" {
 		period = "months"
@@ -366,9 +388,9 @@ func (c *Client) GetBudgetSummary(
 	}
 
 	var summary BudgetSummary
-	_, err := c.sender(newCtx, senderRequest{
+	_, err = c.sender(newCtx, senderRequest{
 		method: http.MethodGet,
-		path:   fmt.Sprintf("/users/%v/budget_summary", c.authedUser.ID),
+		path:   fmt.Sprintf("/users/%v/budget_summary", userID),
 		queries: setupQueries(&map[string]string{
 			"start_date": options.StartDate,
 			"end_date":   options.EndDate,

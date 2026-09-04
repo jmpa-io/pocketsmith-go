@@ -68,13 +68,27 @@ func (c *Client) GetAuthedUser(ctx context.Context) (user *User, err error) {
 		span.RecordError(err)
 		return nil, err
 	}
+	c.authedUser = user
 	return user, nil
+}
+
+// authedUserID returns the ID of the authed user, fetching it lazily if
+// WithSkipAuthCheck was used and c.authedUser has not been populated yet.
+func (c *Client) authedUserID(ctx context.Context) (int, error) {
+	if c.authedUser != nil {
+		return c.authedUser.ID, nil
+	}
+	u, err := c.GetAuthedUser(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("authedUserID: %w", err)
+	}
+	return u.ID, nil
 }
 
 // GetUserOptions defines the options for retrieving a user from Pocketsmith,
 // by the given user id.
 type GetUserOptions struct {
-	UserID int `json:"id" validator:"required"`
+	UserID int `json:"id" validate:"required"`
 }
 
 // GetUser returns a user from Pocketsmith, by the given user id.

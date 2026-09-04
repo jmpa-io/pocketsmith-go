@@ -100,7 +100,7 @@ func Test_ListTransactionAccountTransactions(t *testing.T) {
 	}{
 		"success — returns two transactions": {
 			options: &ListTransactionAccountTransactionsOptions{
-				TransactionAccountID: "10",
+				TransactionAccountID: 10,
 			},
 			mockFn: func(req *http.Request) *http.Response {
 				txns := []Transaction{
@@ -124,7 +124,7 @@ func Test_ListTransactionAccountTransactions(t *testing.T) {
 		},
 		"success — empty result": {
 			options: &ListTransactionAccountTransactionsOptions{
-				TransactionAccountID: "10",
+				TransactionAccountID: 10,
 			},
 			mockFn: func(req *http.Request) *http.Response {
 				b, _ := json.Marshal([]Transaction{})
@@ -136,9 +136,9 @@ func Test_ListTransactionAccountTransactions(t *testing.T) {
 			},
 			want: []Transaction{},
 		},
-		"empty transaction account id — passes through (no validation)": {
+		"zero transaction account id — validation error": {
 			options: &ListTransactionAccountTransactionsOptions{
-				TransactionAccountID: "",
+				TransactionAccountID: 0,
 			},
 			mockFn: func(req *http.Request) *http.Response {
 				b, _ := json.Marshal([]Transaction{})
@@ -148,11 +148,11 @@ func Test_ListTransactionAccountTransactions(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			},
-			want: []Transaction{},
+			err: "TransactionAccountID",
 		},
 		"api error — returns error": {
 			options: &ListTransactionAccountTransactionsOptions{
-				TransactionAccountID: "10",
+				TransactionAccountID: 10,
 			},
 			mockFn: func(req *http.Request) *http.Response {
 				b, _ := json.Marshal(apiErrorResponse{Error: "internal server error"})

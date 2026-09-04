@@ -1,6 +1,9 @@
 package pocketsmith
 
-import "time"
+import (
+	"bytes"
+	"time"
+)
 
 var customTimeFormat = "2006-01-02"
 
@@ -11,6 +14,10 @@ type customTime struct {
 }
 
 func (ct *customTime) UnmarshalJSON(b []byte) error {
+	if bytes.Equal(b, []byte("null")) {
+		ct.Time = time.Time{}
+		return nil
+	}
 	str := string(b)
 	str = str[1 : len(str)-1] // remove quotes around the date string.
 	parsedTime, err := time.Parse(customTimeFormat, str)
