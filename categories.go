@@ -14,7 +14,7 @@ type Categories []Category
 
 // CreateCategoryOptions defines the options for creating a catagory for a user.
 type CreateCategoryOptions struct {
-	Title           string `json:"title"                      validator:"required"`
+	Title           string `json:"title"                      validate:"required"`
 	Colour          string `json:"colour,omitempty"`
 	ParentID        string `json:"parent_id,omitempty"`
 	IsTransfer      bool   `json:"is_transfer,omitempty"`
@@ -25,7 +25,7 @@ type CreateCategoryOptions struct {
 
 // CreateCategoryForUser ...
 type CreateCategoryForUserOptions struct {
-	UserID int `json:"-" validator:"required"`
+	UserID int `json:"-" validate:"required"`
 
 	CreateCategoryOptions
 }
@@ -73,9 +73,16 @@ func (c *Client) CreateCategory(
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateCategory")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return err
+	}
+
 	// create category for authed user.
 	if err := c.CreateCategoryForUser(newCtx, &CreateCategoryForUserOptions{
-		UserID:                c.authedUser.ID,
+		UserID:                userID,
 		CreateCategoryOptions: *options,
 	}); err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("failed to create category: %v", err))
@@ -87,7 +94,7 @@ func (c *Client) CreateCategory(
 
 // DeleteCategoryOptions ...
 type DeleteCategoryOptions struct {
-	CategoryID int32 `json:"-" validator:"required"`
+	CategoryID int32 `json:"-" validate:"required"`
 }
 
 // DeleteCategory, using the given category id, deletes a category.
@@ -120,7 +127,7 @@ func (c *Client) DeleteCategory(ctx context.Context, options *DeleteCategoryOpti
 
 // ListCategoriesOptions ...
 type ListCategoriesForUserOptions struct {
-	UserID int `json:"-" validator:"required"`
+	UserID int `json:"-" validate:"required"`
 }
 
 // ListCategoriesForUser, using the given user id, lists the categories for a user.
@@ -162,8 +169,15 @@ func (c *Client) ListCategories(ctx context.Context) (Categories, error) {
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListCategoriesForAuthedUser")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// list categories for authed user.
-	categories, err := c.ListCategoriesForUser(newCtx, &ListCategoriesForUserOptions{UserID: c.authedUser.ID})
+	categories, err := c.ListCategoriesForUser(newCtx, &ListCategoriesForUserOptions{UserID: userID})
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("failed to list categories: %v", err))
 		span.RecordError(err)
@@ -174,12 +188,12 @@ func (c *Client) ListCategories(ctx context.Context) (Categories, error) {
 
 // GetCategoryByTitle ...
 type GetCategoryByTitleOptions struct {
-	Category string `validator:"required"`
+	Category string `validate:"required"`
 }
 
 // GetCategoryByTitleOptions ...
 type GetCategoryByTitleForUserOptions struct {
-	UserID int `validator:"required"`
+	UserID int `validate:"required"`
 
 	GetCategoryByTitleOptions
 }
@@ -238,11 +252,18 @@ func (c *Client) GetCategoryByTitle(
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "GetCategoryByTitle")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// get category by title.
 	cat, err := c.GetCategoryByTitleForUser(
 		newCtx,
 		&GetCategoryByTitleForUserOptions{
-			UserID:                    c.authedUser.ID,
+			UserID:                    userID,
 			GetCategoryByTitleOptions: *options,
 		},
 	)
