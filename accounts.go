@@ -22,7 +22,7 @@ type CreateAccountOptions struct {
 
 // CreateAccountForUserOptions ...
 type CreateAccountForUserOptions struct {
-	UserID int `json:"-" validator:"required"`
+	UserID int `json:"-" validate:"required"`
 
 	CreateAccountOptions
 }
@@ -72,10 +72,17 @@ func (c *Client) CreateAccount(
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateAccount")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// create account for authed user.
 	account, err := c.CreateAccountForUser(
 		newCtx,
-		&CreateAccountForUserOptions{UserID: c.authedUser.ID, CreateAccountOptions: *options},
+		&CreateAccountForUserOptions{UserID: userID, CreateAccountOptions: *options},
 	)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("failed to create account: %v", err))
@@ -87,7 +94,7 @@ func (c *Client) CreateAccount(
 
 // DeleteAccountOptions ...
 type DeleteAccountOptions struct {
-	AccountID int `validator:"required"`
+	AccountID int `validate:"required"`
 }
 
 // DeleteAccount, using the given account id, deletes an account.
@@ -120,7 +127,7 @@ func (c *Client) DeleteAccount(ctx context.Context, options *DeleteAccountOption
 
 // ListAccountsOptions ...
 type ListAccountsForUserOptions struct {
-	UserID int `validator:"required"`
+	UserID int `validate:"required"`
 }
 
 // ListAccountsForUser, using the given user id, returns a list of account for a user.
@@ -162,8 +169,15 @@ func (c *Client) ListAccounts(ctx context.Context) (Accounts, error) {
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListAccounts")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// list accounts for authed user.
-	accounts, err := c.ListAccountsForUser(newCtx, &ListAccountsForUserOptions{UserID: c.authedUser.ID})
+	accounts, err := c.ListAccountsForUser(newCtx, &ListAccountsForUserOptions{UserID: userID})
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("failed to list accounts: %v", err))
 		span.RecordError(err)
@@ -175,7 +189,7 @@ func (c *Client) ListAccounts(ctx context.Context) (Accounts, error) {
 // ListAccountTransactionsOptions defines the options for listing
 // transactions in an account.
 type ListAccountTransactionsOptions struct {
-	AccountID     int    `json:"-"                       validator:"required"`
+	AccountID     int    `json:"-"                       validate:"required"`
 	StartDate     string `json:"start_date,omitempty"`
 	EndDate       string `json:"end_date,omitempty"`
 	UpdatedSince  string `json:"updated_since,omitempty"`

@@ -159,7 +159,7 @@ func Test_ListEvents(t *testing.T) {
 			},
 			want: Events{},
 		},
-		"empty start date — passes through (no validation)": {
+		"empty start date — validation error": {
 			options: &ListEventsOptions{StartDate: "", EndDate: "2026-05-31"},
 			mockFn: func(req *http.Request) *http.Response {
 				b, _ := json.Marshal(Events{})
@@ -169,9 +169,9 @@ func Test_ListEvents(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			},
-			want: Events{},
+			err: "StartDate",
 		},
-		"empty end date — passes through (no validation)": {
+		"empty end date — validation error": {
 			options: &ListEventsOptions{StartDate: "2026-05-01", EndDate: ""},
 			mockFn: func(req *http.Request) *http.Response {
 				b, _ := json.Marshal(Events{})
@@ -181,7 +181,7 @@ func Test_ListEvents(t *testing.T) {
 					Header:     make(http.Header),
 				}
 			},
-			want: Events{},
+			err: "EndDate",
 		},
 		"api error — returns error": {
 			options: &ListEventsOptions{StartDate: "2026-05-01", EndDate: "2026-05-31"},

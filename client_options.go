@@ -22,7 +22,7 @@ func WithLogger(logger *slog.Logger) Option {
 }
 
 // WithHttpClient overwrites the default httpClient used for API communication.
-func WithHttpClient(httpClient iHttpClient) Option {
+func WithHttpClient(httpClient HTTPDoer) Option {
 	return func(c *Client) error {
 		c.httpClient = httpClient
 		return nil
