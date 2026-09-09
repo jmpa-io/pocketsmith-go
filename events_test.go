@@ -3,11 +3,15 @@ package pocketsmith
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
 	"testing"
+)
+
+var (
+	tdBudget = newTestdata("budget")
+	tdEvents = newTestdata("events")
 )
 
 func Test_GetBudget(t *testing.T) {
@@ -18,34 +22,9 @@ func Test_GetBudget(t *testing.T) {
 	}{
 		"success — returns budget items": {
 			mockFn: func(req *http.Request) *http.Response {
-				items := []BudgetItem{
-					{
-						Category:   Category{ID: 5, Title: "Groceries"},
-						IsTransfer: false,
-						Expense: &BudgetEntry{
-							StartDate:           "2026-05-01",
-							EndDate:             "2026-05-31",
-							CurrencyCode:        "AUD",
-							TotalActualAmount:   -55.30,
-							TotalForecastAmount: -200.00,
-						},
-					},
-					{
-						Category:   Category{ID: 6, Title: "Fuel"},
-						IsTransfer: false,
-						Expense: &BudgetEntry{
-							StartDate:           "2026-05-01",
-							EndDate:             "2026-05-31",
-							CurrencyCode:        "AUD",
-							TotalActualAmount:   -80.00,
-							TotalForecastAmount: -150.00,
-						},
-					},
-				}
-				b, _ := json.Marshal(items)
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader(tdBudget.content)),
 					Header:     make(http.Header),
 				}
 			},
@@ -56,10 +35,9 @@ func Test_GetBudget(t *testing.T) {
 		},
 		"success — empty budget": {
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal([]BudgetItem{})
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte("[]"))),
 					Header:     make(http.Header),
 				}
 			},
@@ -67,10 +45,9 @@ func Test_GetBudget(t *testing.T) {
 		},
 		"api error — returns error": {
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(apiErrorResponse{Error: "unauthorized"})
 				return &http.Response{
 					StatusCode: http.StatusUnauthorized,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte(`{"error":"unauthorized"}`))),
 					Header:     make(http.Header),
 				}
 			},
@@ -118,27 +95,12 @@ func Test_ListEvents(t *testing.T) {
 		"success — returns two events": {
 			options: &ListEventsOptions{StartDate: "2026-05-01", EndDate: "2026-05-31"},
 			mockFn: func(req *http.Request) *http.Response {
-				events := Events{
-					{
-						ID:           "evt-001",
-						Amount:       -200.00,
-						CurrencyCode: "AUD",
-						RepeatType:   "monthly",
-					},
-					{
-						ID:           "evt-002",
-						Amount:       -150.00,
-						CurrencyCode: "AUD",
-						RepeatType:   "monthly",
-					},
-				}
-				b, _ := json.Marshal(events)
 				h := make(http.Header)
 				h.Set("Total", strconv.Itoa(2))
 				h.Set("Per-Page", strconv.Itoa(1000))
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader(tdEvents.content)),
 					Header:     h,
 				}
 			},
@@ -150,10 +112,9 @@ func Test_ListEvents(t *testing.T) {
 		"success — empty events": {
 			options: &ListEventsOptions{StartDate: "2026-05-01", EndDate: "2026-05-31"},
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(Events{})
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte("[]"))),
 					Header:     make(http.Header),
 				}
 			},
@@ -162,10 +123,9 @@ func Test_ListEvents(t *testing.T) {
 		"empty start date — validation error": {
 			options: &ListEventsOptions{StartDate: "", EndDate: "2026-05-31"},
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(Events{})
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte("[]"))),
 					Header:     make(http.Header),
 				}
 			},
@@ -174,10 +134,9 @@ func Test_ListEvents(t *testing.T) {
 		"empty end date — validation error": {
 			options: &ListEventsOptions{StartDate: "2026-05-01", EndDate: ""},
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(Events{})
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte("[]"))),
 					Header:     make(http.Header),
 				}
 			},
@@ -186,10 +145,9 @@ func Test_ListEvents(t *testing.T) {
 		"api error — returns error": {
 			options: &ListEventsOptions{StartDate: "2026-05-01", EndDate: "2026-05-31"},
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(apiErrorResponse{Error: "forbidden"})
 				return &http.Response{
 					StatusCode: http.StatusForbidden,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte(`{"error":"forbidden"}`))),
 					Header:     make(http.Header),
 				}
 			},

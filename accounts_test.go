@@ -11,6 +11,8 @@ import (
 	"testing"
 )
 
+var tdAccounts = newTestdata("accounts")
+
 // userJSON is the minimal User JSON returned for the GetAuthedUser init call.
 // customTime fields (forecast_start_date, forecast_end_date) require YYYY-MM-DD
 // format — using a raw map avoids the zero-time marshalling issue.
@@ -55,14 +57,9 @@ func Test_ListAccounts(t *testing.T) {
 	}{
 		"success — returns two accounts": {
 			mockFn: func(req *http.Request) *http.Response {
-				want := Accounts{
-					{ID: 1, Title: "Everyday Account", Type: "bank"},
-					{ID: 2, Title: "Savings Account", Type: "bank"},
-				}
-				b, _ := json.Marshal(want)
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader(tdAccounts.content)),
 					Header:     make(http.Header),
 				}
 			},
@@ -73,10 +70,9 @@ func Test_ListAccounts(t *testing.T) {
 		},
 		"success — empty list": {
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(Accounts{})
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte("[]"))),
 					Header:     make(http.Header),
 				}
 			},
@@ -84,10 +80,9 @@ func Test_ListAccounts(t *testing.T) {
 		},
 		"api error — returns error": {
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(apiErrorResponse{Error: "unauthorized"})
 				return &http.Response{
 					StatusCode: http.StatusUnauthorized,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte(`{"error":"unauthorized"}`))),
 					Header:     make(http.Header),
 				}
 			},
