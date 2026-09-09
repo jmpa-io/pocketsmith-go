@@ -3,11 +3,12 @@ package pocketsmith
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"testing"
 )
+
+var tdCategories = newTestdata("categories")
 
 func Test_ListCategories(t *testing.T) {
 	tests := map[string]struct {
@@ -17,28 +18,22 @@ func Test_ListCategories(t *testing.T) {
 	}{
 		"success — returns two categories": {
 			mockFn: func(req *http.Request) *http.Response {
-				want := Categories{
-					{ID: 5, Title: "Groceries", Colour: "#4caf50"},
-					{ID: 6, Title: "Fuel", Colour: "#ff5722"},
-				}
-				b, _ := json.Marshal(want)
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader(tdCategories.content)),
 					Header:     make(http.Header),
 				}
 			},
 			want: Categories{
-				{ID: 5, Title: "Groceries", Colour: "#4caf50"},
-				{ID: 6, Title: "Fuel", Colour: "#ff5722"},
+				{ID: 5, Title: "Groceries"},
+				{ID: 6, Title: "Fuel"},
 			},
 		},
 		"success — empty list": {
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(Categories{})
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte("[]"))),
 					Header:     make(http.Header),
 				}
 			},
@@ -46,10 +41,9 @@ func Test_ListCategories(t *testing.T) {
 		},
 		"api error — unauthorized": {
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(apiErrorResponse{Error: "unauthorized"})
 				return &http.Response{
 					StatusCode: http.StatusUnauthorized,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte(`{"error":"unauthorized"}`))),
 					Header:     make(http.Header),
 				}
 			},
@@ -57,14 +51,9 @@ func Test_ListCategories(t *testing.T) {
 		},
 		"success — category with children": {
 			mockFn: func(req *http.Request) *http.Response {
-				child := &Category{ID: 50, Title: "Fresh Produce", Colour: "#8bc34a"}
-				want := Categories{
-					{ID: 5, Title: "Groceries", Colour: "#4caf50", Children: []*Category{child}},
-				}
-				b, _ := json.Marshal(want)
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte(`[{"id":5,"title":"Groceries","colour":"#4caf50","children":[{"id":50,"title":"Fresh Produce","colour":"#8bc34a"}]}]`))),
 					Header:     make(http.Header),
 				}
 			},

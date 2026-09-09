@@ -3,11 +3,15 @@ package pocketsmith
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"net/http"
 	"strconv"
 	"testing"
+)
+
+var (
+	tdTransactionAccounts = newTestdata("transaction-accounts")
+	tdTransactions        = newTestdata("transactions")
 )
 
 func Test_ListTransactionAccounts(t *testing.T) {
@@ -18,28 +22,22 @@ func Test_ListTransactionAccounts(t *testing.T) {
 	}{
 		"success — returns two transaction accounts": {
 			mockFn: func(req *http.Request) *http.Response {
-				want := TransactionAccounts{
-					{ID: 10, Name: "Everyday", Type: "checking"},
-					{ID: 11, Name: "Savings", Type: "savings"},
-				}
-				b, _ := json.Marshal(want)
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader(tdTransactionAccounts.content)),
 					Header:     make(http.Header),
 				}
 			},
 			want: TransactionAccounts{
-				{ID: 10, Name: "Everyday", Type: "checking"},
-				{ID: 11, Name: "Savings", Type: "savings"},
+				{ID: 10, Name: "Everyday"},
+				{ID: 11, Name: "Savings"},
 			},
 		},
 		"success — empty list": {
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(TransactionAccounts{})
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte("[]"))),
 					Header:     make(http.Header),
 				}
 			},
@@ -47,10 +45,9 @@ func Test_ListTransactionAccounts(t *testing.T) {
 		},
 		"api error — returns error": {
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(apiErrorResponse{Error: "forbidden"})
 				return &http.Response{
 					StatusCode: http.StatusForbidden,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte(`{"error":"forbidden"}`))),
 					Header:     make(http.Header),
 				}
 			},
@@ -103,23 +100,18 @@ func Test_ListTransactionAccountTransactions(t *testing.T) {
 				TransactionAccountID: 10,
 			},
 			mockFn: func(req *http.Request) *http.Response {
-				txns := []Transaction{
-					{ID: 42, Payee: "Coles Supermarket", Amount: -55.30},
-					{ID: 43, Payee: "BP Fuel Station", Amount: -80.00},
-				}
-				b, _ := json.Marshal(txns)
 				h := make(http.Header)
 				h.Set("Total", strconv.Itoa(2))
 				h.Set("Per-Page", strconv.Itoa(1000))
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader(tdTransactions.content)),
 					Header:     h,
 				}
 			},
 			want: []Transaction{
-				{ID: 42, Payee: "Coles Supermarket", Amount: -55.30},
-				{ID: 43, Payee: "BP Fuel Station", Amount: -80.00},
+				{ID: 42, Payee: "Coles Supermarket"},
+				{ID: 43, Payee: "BP Fuel Station"},
 			},
 		},
 		"success — empty result": {
@@ -127,10 +119,9 @@ func Test_ListTransactionAccountTransactions(t *testing.T) {
 				TransactionAccountID: 10,
 			},
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal([]Transaction{})
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte("[]"))),
 					Header:     make(http.Header),
 				}
 			},
@@ -141,10 +132,9 @@ func Test_ListTransactionAccountTransactions(t *testing.T) {
 				TransactionAccountID: 0,
 			},
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal([]Transaction{})
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte("[]"))),
 					Header:     make(http.Header),
 				}
 			},
@@ -155,10 +145,9 @@ func Test_ListTransactionAccountTransactions(t *testing.T) {
 				TransactionAccountID: 10,
 			},
 			mockFn: func(req *http.Request) *http.Response {
-				b, _ := json.Marshal(apiErrorResponse{Error: "internal server error"})
 				return &http.Response{
 					StatusCode: http.StatusInternalServerError,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader([]byte(`{"error":"internal server error"}`))),
 					Header:     make(http.Header),
 				}
 			},
