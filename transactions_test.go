@@ -10,6 +10,8 @@ import (
 	"testing"
 )
 
+var tdTransaction = newTestdata("transaction")
+
 func Test_GetTransaction(t *testing.T) {
 	tests := map[string]struct {
 		mockFn  func(*http.Request) *http.Response
@@ -20,29 +22,15 @@ func Test_GetTransaction(t *testing.T) {
 		"success — returns full transaction": {
 			options: &GetTransactionOptions{TransactionID: 42},
 			mockFn: func(req *http.Request) *http.Response {
-				// verify correct path
 				if !strings.Contains(req.URL.Path, "/transactions/42") {
 					t.Errorf("GetTransaction() path = %q, want to contain /transactions/42", req.URL.Path)
 				}
 				if req.Method != http.MethodGet {
 					t.Errorf("GetTransaction() method = %q, want GET", req.Method)
 				}
-				tx := Transaction{
-					ID:     42,
-					Payee:  "Coles Supermarket",
-					Amount: -55.30,
-					Date:   "2026-05-10",
-					Note:   "⏰ 2026-05-10T20:29+10:00",
-					Labels: []string{"Groceries", "Snack"},
-					Category: Category{
-						ID:    8973822,
-						Title: "04 | 🥗 | Food",
-					},
-				}
-				b, _ := json.Marshal(tx)
 				return &http.Response{
 					StatusCode: http.StatusOK,
-					Body:       io.NopCloser(bytes.NewBuffer(b)),
+					Body:       io.NopCloser(bytes.NewReader(tdTransaction.content)),
 					Header:     make(http.Header),
 				}
 			},
