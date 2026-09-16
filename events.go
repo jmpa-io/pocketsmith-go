@@ -312,9 +312,6 @@ type BudgetItem struct {
 	Income     *BudgetEntry `json:"income"`
 }
 
-// GetBudgetOptions defines options for getting the current budget.
-type GetBudgetOptions struct{}
-
 // GetBudget returns the current budget for all categories for the authed user.
 // https://developers.pocketsmith.com/reference/get_users-id-budget-1
 func (c *Client) GetBudget(ctx context.Context) ([]BudgetItem, error) {
