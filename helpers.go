@@ -2,7 +2,6 @@ package pocketsmith
 
 import (
 	"reflect"
-	"time"
 )
 
 // A helper function to check if an interface has a value or not.
@@ -17,9 +16,4 @@ func isNil(i interface{}) bool {
 		return reflect.ValueOf(i).IsNil()
 	}
 	return false
-}
-
-// parseDate parses a YYYY-MM-DD string into a time.Time.
-func parseDate(s string) (time.Time, error) {
-	return time.Parse("2006-01-02", s)
 }
