@@ -76,7 +76,55 @@ The following API endpoints are currently covered by this package:
 
 ## `Usage`
 
-// TODO
+Below is a basic example of how to get started with this package:
+
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"os"
+
+	"github.com/jmpa-io/pocketsmith-go"
+)
+
+func main() {
+
+	// setup tracing.
+	ctx := context.TODO()
+
+	// retrieve token.
+	token := os.Getenv("POCKETSMITH_TOKEN")
+
+	// setup client.
+	c, err := pocketsmith.New(ctx, token, pocketsmith.WithLogLevel(slog.LevelWarn))
+	if err != nil {
+		fmt.Printf("failed to setup client: %v\n", err)
+		os.Exit(1)
+	}
+
+	// get authed user.
+	u, err := c.GetAuthedUser(ctx)
+	if err != nil {
+		fmt.Printf("failed to get authed user: %v\n", err)
+		os.Exit(1)
+	}
+
+	// list accounts.
+	accounts, err := c.ListAccountsForUser(ctx, u.ID)
+	if err != nil {
+		fmt.Printf("failed to list accounts: %v\n", err)
+		os.Exit(1)
+	}
+	for _, a := range accounts {
+		fmt.Printf("%s: %s\n", a.Title, a.CurrentBalance)
+	}
+}
+```
+
+For more explicit examples, see the `cmd/*/main.go` files for details.
 
 ## `License`
 
