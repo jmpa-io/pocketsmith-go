@@ -22,9 +22,20 @@ func WithLogger(logger *slog.Logger) Option {
 }
 
 // WithHttpClient overwrites the default httpClient used for API communication.
-func WithHttpClient(httpClient iHttpClient) Option {
+func WithHttpClient(httpClient HTTPDoer) Option {
 	return func(c *Client) error {
 		c.httpClient = httpClient
+		return nil
+	}
+}
+
+// WithSkipAuthCheck disables the GetAuthedUser call that normally happens at
+// client startup. Use this when the PocketSmith API may be unreachable at
+// init time (e.g. restrictive corporate networks). Tools will still fail
+// gracefully if the API is unreachable when they are called.
+func WithSkipAuthCheck() Option {
+	return func(c *Client) error {
+		c.skipAuthCheck = true
 		return nil
 	}
 }

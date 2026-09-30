@@ -4,12 +4,16 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/codes"
 )
+
+// defaultPageWorkers is the default number of concurrent page-fetch goroutines
+// used by fetchAllPages. Pocketsmith's rate limit is 5000 requests/hour;
+// 10 concurrent workers is conservative and safe.
+const defaultPageWorkers = 10
 
 // TransactionAccounts represents a slice of TransactionAccount.
 type TransactionAccounts []TransactionAccount
@@ -17,7 +21,7 @@ type TransactionAccounts []TransactionAccount
 // LsitTransactionAccountsForUserOptions defines options for listing
 // transaction accounts from Pocketsmith for the given user, by the user id.
 type ListTransactionAccountsForUserOptions struct {
-	UserID int `validator:"required"`
+	UserID int `validate:"required"`
 }
 
 // ListTransactionAccounts lists the transaction accounts from Pocketsmith for
@@ -45,7 +49,7 @@ func (c *Client) ListTransactionAccountsForUser(
 		path:   fmt.Sprintf("/users/%v/transaction_accounts", options.UserID),
 	}, &accounts)
 	if err != nil {
-		span.SetStatus(codes.Error, fmt.Sprintf("failed to get user: %v", err))
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to list transaction accounts: %v", err))
 		span.RecordError(err)
 		return nil, err
 	}
@@ -61,21 +65,34 @@ func (c *Client) ListTransactionAccounts(ctx context.Context) (TransactionAccoun
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListTransactionAccounts")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// list transaction accounts for authed user.
-	return c.ListTransactionAccountsForUser(
+	accounts, err := c.ListTransactionAccountsForUser(
 		newCtx,
-		&ListTransactionAccountsForUserOptions{UserID: c.authedUser.ID},
+		&ListTransactionAccountsForUserOptions{UserID: userID},
 	)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to list transaction accounts: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return accounts, nil
 }
 
 // CreateTransactionAccountTransactionOptions defines the options for creating
 // a transaction in the given transaction account in Pocketsmith, by the
 // transaction account id.
 type CreateTransactionAccountTransactionOptions struct {
-	TransactionAccountID int     `json:"-"                       validator:"required"`
-	Payee                string  `json:"payee"                   validator:"required"`
-	Amount               float64 `json:"amount"                  validator:"required"`
-	Date                 string  `json:"date"                    validator:"required"` //TODO: should this be customTime?
+	TransactionAccountID int     `json:"-"                       validate:"required"`
+	Payee                string  `json:"payee"                   validate:"required"`
+	Amount               float64 `json:"amount"` // no validate:"required" — 0.00 is a valid amount
+	Date                 string  `json:"date"                    validate:"required"` //TODO: should this be customTime?
 	IsTransfer           bool    `json:"is_transfer,omitempty"`
 	Labels               string  `json:"labels,omitempty"` // must be comma seperated. // TODO: should this be a []string or a custom type?
 	CategoryID           int32   `json:"category_id,omitempty"`
@@ -129,11 +146,11 @@ const (
 	ListTransactionAccountTransactionsOptionTypeCredit ListTransactionAccountTransactionsOptionType = "credit"
 )
 
-// ListTra609534nsactionAccountTransactionsOptions defines the options for l
-// isting transactions in a transaction account from Pocketsmith, by the
+// ListTransactionAccountTransactionsOptions defines the options for listing
+// transactions in a transaction account from Pocketsmith, by the
 // transaction account id.
 type ListTransactionAccountTransactionsOptions struct {
-	TransactionAccountID string                                       `json:"-"                       validator:"required"`
+	TransactionAccountID int                                          `json:"-"                       validate:"required"`
 	StartDate            string                                       `json:"start_date,omitempty"` // TODO: should this be customTime?
 	EndDate              string                                       `json:"end_date,omitempty"`   // TODO: should this be customTime?
 	UpdatedSince         time.Time                                    `json:"updated_since,omitempty"`
@@ -163,6 +180,23 @@ func (c *Client) ListTransactionAccountTransactions(
 		return nil, err
 	}
 
+	// setup query params — only non-zero/non-empty values are included.
+	queryMap := map[string]string{
+		"start_date": options.StartDate,
+		"end_date":   options.EndDate,
+		"search":     options.Search,
+		"type":       string(options.Type),
+	}
+	if options.Uncategorised != 0 {
+		queryMap["uncategorised"] = fmt.Sprintf("%v", options.Uncategorised)
+	}
+	if options.NeedsReview != 0 {
+		queryMap["needs_review"] = fmt.Sprintf("%v", options.NeedsReview)
+	}
+	if !options.UpdatedSince.IsZero() {
+		queryMap["updated_since"] = options.UpdatedSince.Format(time.RFC3339)
+	}
+
 	// setup request.
 	sr := senderRequest{
 		method: http.MethodGet,
@@ -170,33 +204,18 @@ func (c *Client) ListTransactionAccountTransactions(
 			"/transaction_accounts/%v/transactions",
 			options.TransactionAccountID,
 		),
-		queries: setupQueries(nil),
+		queries: setupQueries(&queryMap),
 	}
 
-	// list transaction account transactions.
-	for {
-
-		// get batch.
-		var batch []Transaction
-		resp, err := c.sender(newCtx, sr, &batch)
-		if err != nil {
-			span.SetStatus(
-				codes.Error,
-				fmt.Sprintf("failed to list transaction account transactions: %v", err),
-			)
-			span.RecordError(err)
-			return nil, err
-		}
-
-		// extract batch data.
-		transactions = append(transactions, batch...)
-
-		// paginate?
-		next := getHeader(resp.Header, "next")
-		if next == "" {
-			break
-		}
-		sr.path = strings.Replace(next, c.endpoint, "", -1)
+	// list transaction account transactions concurrently across all pages.
+	transactions, err = fetchAllPages[Transaction](newCtx, c, sr, defaultPageWorkers)
+	if err != nil {
+		span.SetStatus(
+			codes.Error,
+			fmt.Sprintf("failed to list transaction account transactions: %v", err),
+		)
+		span.RecordError(err)
+		return nil, err
 	}
 	return transactions, nil
 }

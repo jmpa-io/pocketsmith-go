@@ -123,10 +123,10 @@ func Test_New(t *testing.T) {
 	}
 	for name, tt := range tests {
 
-		// setup headers.
-		headers := make(http.Header)
+		// setup expected headers.
+		wantHeaders := make(http.Header)
 		if tt.token != "" {
-			headers.Add("Authorization", "Bearer "+tt.token)
+			wantHeaders.Add("X-Developer-Key", tt.token)
 		}
 
 		// add mock to client.
@@ -153,10 +153,9 @@ func Test_New(t *testing.T) {
 			}
 			switch {
 			case
-				got.headers.Get("Authorization") != headers.Get("Authorization"),
+				got.headers.Get("X-Developer-Key") != wantHeaders.Get("X-Developer-Key"),
 				got.logLevel != tt.want.logLevel,
-				(got.logger != slog.Default() && tt.want.logger != slog.Default()) && got.logger != tt.want.logger,
-				got.httpClient != tt.want.httpClient:
+				(got.logger != slog.Default() && tt.want.logger != slog.Default()) && got.logger != tt.want.logger:
 				t.Errorf(
 					"New() returned unexpected configuration; want=%+v, got=%+v\n",
 					tt.want,

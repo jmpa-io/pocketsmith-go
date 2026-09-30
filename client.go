@@ -5,13 +5,15 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 	"go.opentelemetry.io/otel"
 )
 
-// An iHttpClient is an interface over http.Client.
-type iHttpClient interface {
+// HTTPDoer is an interface over http.Client, allowing callers to supply a
+// custom HTTP client via WithHttpClient.
+type HTTPDoer interface {
 	Do(req *http.Request) (*http.Response, error)
 }
 
@@ -22,9 +24,10 @@ type Client struct {
 	tracerName string // The name of the tracer output in the traces.
 
 	// config.
-	endpoint   string      // The endpoint to query against.
-	httpClient iHttpClient // The http client used when sending / receiving data from the endpoint.
-	headers    http.Header // The headers passed to the http client when sending / receiving data from the endpoint.
+	endpoint      string   // The endpoint to query against.
+	httpClient    HTTPDoer // The http client used when sending / receiving data from the endpoint.
+	headers       http.Header // The headers passed to the http client when sending / receiving data from the endpoint.
+	skipAuthCheck bool        // Skip the GetAuthedUser call on startup (useful when API is unreachable).
 
 	// misc.
 	logLevel  slog.Level          // The log level of the default logger.
@@ -52,10 +55,23 @@ func New(ctx context.Context, token string, options ...Option) (*Client, error) 
 		return nil, ErrClientEmptyToken{}
 	}
 
-	// default client.
+	// default client — clone http.DefaultTransport so we inherit all of its
+	// system-level settings (DNS resolver, TLS config, proxy env vars, etc.)
+	// and only override the connection-pool limits we care about:
+	//   • a 30-second request timeout (DefaultClient has none — hangs forever)
+	//   • MaxIdleConnsPerHost=20 so the concurrent page workers in fetchAllPages
+	//     can all reuse keep-alive connections to the same API host instead of
+	//     being throttled to DefaultTransport's limit of 2
+	dt := http.DefaultTransport.(*http.Transport).Clone()
+	dt.MaxIdleConns = 100
+	dt.MaxIdleConnsPerHost = 20
+	dt.IdleConnTimeout = 90 * time.Second
 	c := &Client{
-		httpClient: http.DefaultClient,
-		endpoint:   "https://api.pocketsmith.com/v2",
+		httpClient: &http.Client{
+			Timeout:   30 * time.Second,
+			Transport: dt,
+		},
+		endpoint: "https://api.pocketsmith.com/v2",
 	}
 
 	// overwrite client with any given options.
@@ -91,9 +107,13 @@ func New(ctx context.Context, token string, options ...Option) (*Client, error) 
 	c.headers = headers
 
 	// retrieve authed user, to determine if the token is valid.
-	var err error
-	if c.authedUser, err = c.GetAuthedUser(newCtx); err != nil {
-		return nil, ErrClientFailedToGetAuthedUser{err}
+	// Skipped if WithSkipAuthCheck was used — useful when the API is
+	// unreachable at startup (e.g. restrictive corporate networks).
+	if !c.skipAuthCheck {
+		var err error
+		if c.authedUser, err = c.GetAuthedUser(newCtx); err != nil {
+			return nil, ErrClientFailedToGetAuthedUser{err}
+		}
 	}
 
 	c.logger.Debug("client setup successfully")
