@@ -1,0 +1,46 @@
+[
+  {
+    "id": 10,
+    "name": "Everyday",
+    "number": "123456789",
+    "type": "checking",
+    "currency_code": "AUD",
+    "current_balance": 1234.56,
+    "current_balance_in_base_currency": 1234.56,
+    "current_balance_exchange_rate": 1.0,
+    "current_balance_date": "2026-05-11",
+    "starting_balance": 0.0,
+    "starting_balance_date": "2024-01-01",
+    "institution": {
+      "id": 100,
+      "title": "Test Bank",
+      "currency_code": "AUD",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    },
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2026-05-11T00:00:00Z"
+  },
+  {
+    "id": 11,
+    "name": "Savings",
+    "number": "987654321",
+    "type": "savings",
+    "currency_code": "AUD",
+    "current_balance": 9876.54,
+    "current_balance_in_base_currency": 9876.54,
+    "current_balance_exchange_rate": 1.0,
+    "current_balance_date": "2026-05-11",
+    "starting_balance": 0.0,
+    "starting_balance_date": "2024-01-01",
+    "institution": {
+      "id": 100,
+      "title": "Test Bank",
+      "currency_code": "AUD",
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    },
+    "created_at": "2024-01-01T00:00:00Z",
+    "updated_at": "2026-05-11T00:00:00Z"
+  }
+]

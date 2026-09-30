@@ -15,14 +15,14 @@ type Institutions []Institution
 // CreateInstitutionOptions defines the options for creating an institutions in
 // Pocketsmith, under the authed user.
 type CreateInstitutionOptions struct {
-	Title        string `json:"title"         validator:"required"`
-	CurrencyCode string `json:"currency_code" validator:"required"`
+	Title        string `json:"title"         validate:"required"`
+	CurrencyCode string `json:"currency_code" validate:"required"`
 }
 
 // CreateInstitutionOptionsForUser defines the options for creating an
 // institution for the given user in Pocketsmith, by the user id.
 type CreateInstitutionOptionsForUser struct {
-	UserID int `json:"-" validator:"required"`
+	UserID int `json:"-" validate:"required"`
 
 	CreateInstitutionOptions
 }
@@ -70,19 +70,32 @@ func (c *Client) CreateInstitution(
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "CreateInstitution")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// create Institution for authed user.
-	return c.CreateInstitutionForUser(
+	inst, err := c.CreateInstitutionForUser(
 		newCtx,
 		&CreateInstitutionOptionsForUser{
-			UserID:                   c.authedUser.ID,
+			UserID:                   userID,
 			CreateInstitutionOptions: *options,
 		},
 	)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to create institution: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return inst, nil
 }
 
 // DeleteInstitutionOptions defines the options for deleteing an institution.
 type DeleteInstitutionOptions struct {
-	InstitutionID int `json:"-" validator:"required"`
+	InstitutionID int `json:"-" validate:"required"`
 
 	MergeIntoInstitutionID int `json:"merge_into_institution_id"`
 }
@@ -119,16 +132,16 @@ func (c *Client) DeleteInstitution(
 	return nil
 }
 
-// ListInstitutionsForUser ...
-type ListInstitutionsForUser struct {
-	UserID int `json:"-" validator:"required"`
+// ListInstitutionsForUserOptions ...
+type ListInstitutionsForUserOptions struct {
+	UserID int `json:"-" validate:"required"`
 }
 
 // ListInstitutionsForUser, using the given user id, list the institutions for a user.
 // https://developers.pocketsmith.com/reference#get_users-id-institutions
 func (c *Client) ListInstitutionsForUser(
 	ctx context.Context,
-	options *ListInstitutionsForUser,
+	options *ListInstitutionsForUserOptions,
 ) (institutions Institutions, err error) {
 
 	// setup tracing.
@@ -147,7 +160,12 @@ func (c *Client) ListInstitutionsForUser(
 		method: http.MethodGet,
 		path:   fmt.Sprintf("/users/%v/institutions", options.UserID),
 	}, &institutions)
-	return institutions, err
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to list institutions: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return institutions, nil
 }
 
 // ListInstitutions, using the token attached to the client, lists
@@ -160,6 +178,19 @@ func (c *Client) ListInstitutions(
 	newCtx, span := otel.Tracer(c.tracerName).Start(ctx, "ListInstitutions")
 	defer span.End()
 
+	userID, err := c.authedUserID(newCtx)
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to get authed user: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+
 	// list institutions for authed user.
-	return c.ListInstitutionsForUser(newCtx, &ListInstitutionsForUser{UserID: c.authedUser.ID})
+	institutions, err := c.ListInstitutionsForUser(newCtx, &ListInstitutionsForUserOptions{UserID: userID})
+	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("failed to list institutions: %v", err))
+		span.RecordError(err)
+		return nil, err
+	}
+	return institutions, nil
 }

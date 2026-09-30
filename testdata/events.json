@@ -1,0 +1,76 @@
+[
+  {
+    "id": "evt-001",
+    "series_id": 1001,
+    "series_start_id": "evt-001",
+    "category": {
+      "id": 5,
+      "title": "Groceries",
+      "colour": "#4caf50",
+      "children": null,
+      "parent_id": null,
+      "is_transfer": false,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    },
+    "scenario": {
+      "id": 200,
+      "account_id": 1,
+      "title": "Main Forecast",
+      "description": "",
+      "type": "personal",
+      "interest_rate": 0.0,
+      "starting_balance": 0.0,
+      "current_balance": 0.0,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    },
+    "amount": -200.00,
+    "amount_in_base_currency": -200.00,
+    "currency_code": "AUD",
+    "date": "2026-05-01",
+    "colour": "",
+    "note": "monthly grocery budget",
+    "repeat_type": "monthly",
+    "repeat_interval": 1,
+    "infinite_series": true,
+    "is_transfer": false
+  },
+  {
+    "id": "evt-002",
+    "series_id": 1002,
+    "series_start_id": "evt-002",
+    "category": {
+      "id": 6,
+      "title": "Fuel",
+      "colour": "#ff5722",
+      "children": null,
+      "parent_id": null,
+      "is_transfer": false,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    },
+    "scenario": {
+      "id": 200,
+      "account_id": 1,
+      "title": "Main Forecast",
+      "description": "",
+      "type": "personal",
+      "interest_rate": 0.0,
+      "starting_balance": 0.0,
+      "current_balance": 0.0,
+      "created_at": "2024-01-01T00:00:00Z",
+      "updated_at": "2024-01-01T00:00:00Z"
+    },
+    "amount": -150.00,
+    "amount_in_base_currency": -150.00,
+    "currency_code": "AUD",
+    "date": "2026-05-01",
+    "colour": "",
+    "note": "monthly fuel budget",
+    "repeat_type": "monthly",
+    "repeat_interval": 1,
+    "infinite_series": true,
+    "is_transfer": false
+  }
+]
