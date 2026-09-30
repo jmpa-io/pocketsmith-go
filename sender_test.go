@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strings"
 	"testing"
 )
 
@@ -30,74 +29,66 @@ func Test_sender(t *testing.T) {
 		result  interface{}
 		err     string
 	}{
-		// "catch json marshal error": {
-		// 	request: senderRequest{
-		// 		body: make(chan int), // can't marshal a channel.
-		// 	},
-		// 	err: ErrFailedMarshal{emptyErr}.Error(),
-		// },
-		// "catch failed setup request": {
-		// 	mock: &mockRoundTripper{
-		// 		MockFunc: func(req *http.Request) *http.Response {
-		// 			return &http.Response{}
-		// 		},
-		// 	},
-		// 	request: senderRequest{
-		// 		method: "https://", // returns an error on invalid method.
-		// 	},
-		// 	err: ErrSenderFailedSetupRequest{emptyErr}.Error(),
-		// },
-		// "catch failed send request": {
-		// 	mock: &mockRoundTripper{
-		// 		MockFunc: func(req *http.Request) *http.Response {
-		// 			return &http.Response{
-		// 				StatusCode: http.StatusUnauthorized,
-		// 			}
-		// 		},
-		// 	},
-		// 	request: senderRequest{
-		// 		method: "error", // not a real http method, this is just to test.
-		// 	},
-		// 	err: ErrSenderFailedSendRequest{emptyErr}.Error(),
-		// },
-		// "catch failed parse response": {
-		// 	mock: &mockRoundTripper{
-		// 		MockFunc: func(req *http.Request) *http.Response {
-		// 			return &http.Response{
-		// 				Body: &brokenReader{},
-		// 			}
-		// 		},
-		// 	},
-		// 	err: ErrSenderFailedParseResponse{emptyErr}.Error(),
-		// },
-		// "catch json unmarshal error": {
-		// 	mock: &mockRoundTripper{
-		// 		MockFunc: func(req *http.Request) *http.Response {
-		// 			return &http.Response{}
-		// 		},
-		// 	},
-		// 	err: ErrFailedUnmarshal{emptyErr}.Error(),
-		// },
+		"catch json marshal error": {
+			request: senderRequest{
+				body: make(chan int), // can't marshal a channel.
+			},
+			err: ErrFailedMarshal{emptyErr}.Error(),
+		},
+		"catch failed setup request": {
+			mock: &mockRoundTripper{
+				MockFunc: func(req *http.Request) *http.Response {
+					return &http.Response{}
+				},
+			},
+			request: senderRequest{
+				method: "https://", // returns an error on invalid method.
+			},
+			err: ErrSenderFailedSetupRequest{emptyErr}.Error(),
+		},
+		"catch failed send request": {
+			mock: &mockRoundTripper{
+				MockFunc: func(req *http.Request) *http.Response {
+					return &http.Response{}
+				},
+			},
+			request: senderRequest{
+				method: "error", // mockRoundTripper returns an error when method contains "error".
+			},
+			err: ErrSenderFailedSendRequest{emptyErr}.Error(),
+		},
+		"catch failed parse response": {
+			mock: &mockRoundTripper{
+				MockFunc: func(req *http.Request) *http.Response {
+					return &http.Response{
+						StatusCode: http.StatusOK,
+						Body:       &brokenReader{},
+						Header:     make(http.Header),
+					}
+				},
+			},
+			request: senderRequest{
+				method: http.MethodGet,
+				path:   "/me",
+			},
+			err: ErrSenderFailedParseResponse{emptyErr}.Error(),
+		},
 	}
 	for name, tt := range tests {
-
-		// tracing context.
-		ctx := context.Background()
-
-		// setup client with mock.
-		c, _ := New(ctx, "xxxx",
-			WithHttpClient(&http.Client{
-				Transport: tt.mock,
-			}),
-		)
-
-		// run tests.
+		tt := tt
 		t.Run(name, func(t *testing.T) {
+			ctx := context.Background()
+
+			// use newTestClient to bypass GetAuthedUser at construction time.
+			c := newTestClient(t, tt.mock)
+
 			_, err := c.sender(ctx, tt.request, &tt.result)
 
-			// any errors?
-			if tt.err != "" && err != nil {
-				if !strings.Contains(err.Error(), tt.err) {
+			if tt.err != "" {
+				if err == nil {
+					t.Fatalf("sender() expected error containing %q, got nil", tt.err)
+				}
+				if !containsStr(err.Error(), tt.err) {
 					t.Errorf(
 						"sender() returned an unexpected error;\nwant=%v\ngot=%v\n",
 						tt.err,
@@ -108,9 +99,7 @@ func Test_sender(t *testing.T) {
 			}
 			if err != nil {
 				t.Errorf("sender() returned an error;\nerror=%v\n", err)
-				return
 			}
-
 		})
 	}
 }

@@ -14,6 +14,8 @@ func (e ErrSenderFailedSetupRequest) Error() string {
 	return fmt.Sprintf("failed to setup http request: %v", e.err)
 }
 
+func (e ErrSenderFailedSetupRequest) Unwrap() error { return e.err }
+
 // ErrSenderFailedSendRequest is returned whenever the sender fails to send
 // a new *http.Request to the API.
 type ErrSenderFailedSendRequest struct {
@@ -24,6 +26,8 @@ func (e ErrSenderFailedSendRequest) Error() string {
 	return fmt.Sprintf("failed to send http request: %v", e.err)
 }
 
+func (e ErrSenderFailedSendRequest) Unwrap() error { return e.err }
+
 // ErrSenderFailedParseResponse is returned when the sender fails to parse a
 // response from the API.
 type ErrSenderFailedParseResponse struct {
@@ -33,6 +37,8 @@ type ErrSenderFailedParseResponse struct {
 func (e ErrSenderFailedParseResponse) Error() string {
 	return fmt.Sprintf("failed to parse response: %v", e.err)
 }
+
+func (e ErrSenderFailedParseResponse) Unwrap() error { return e.err }
 
 // ErrSenderInvalidResponse is returned when the sender receives an error
 // response specifically from the API.
