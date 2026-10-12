@@ -312,7 +312,7 @@ type BudgetItem struct {
 	Income     *BudgetEntry `json:"income"`
 }
 
-// GetBudgetOptions defines options for getting the current budget.
+// GetBudgetOptions is retained for compatibility with earlier releases.
 type GetBudgetOptions struct{}
 
 // GetBudget returns the current budget for all categories for the authed user.

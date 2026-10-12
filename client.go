@@ -67,6 +67,7 @@ func New(ctx context.Context, token string, options ...Option) (*Client, error) 
 	dt.MaxIdleConnsPerHost = 20
 	dt.IdleConnTimeout = 90 * time.Second
 	c := &Client{
+		tracerName: tracerName,
 		httpClient: &http.Client{
 			Timeout:   30 * time.Second,
 			Transport: dt,
