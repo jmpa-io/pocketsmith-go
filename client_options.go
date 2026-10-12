@@ -2,7 +2,7 @@ package pocketsmith
 
 import "log/slog"
 
-// Option configures a departure client.
+// Option configures a pocketsmith client.
 type Option func(*Client) error
 
 // WithLogLevel sets the log level for the default logger.
