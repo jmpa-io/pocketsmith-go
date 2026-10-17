@@ -4,7 +4,7 @@ import "time"
 
 // Transaction defines a PocketSmith transaction.
 type Transaction struct {
-	ID                   int32              `json:"id"`
+	ID                   int64              `json:"id"`
 	Date                 string             `json:"date"`
 	Payee                string             `json:"payee"`
 	OriginalPayee        string             `json:"original_payee"`
