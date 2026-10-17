@@ -210,7 +210,7 @@ func (c *Client) ListAttachments(
 // AssignAttachmentToTransactionOptions defines the options for assigning an
 // attachment to a transaction.
 type AssignAttachmentToTransactionOptions struct {
-	TransactionID int32 `json:"-"             validate:"required"`
+	TransactionID int64 `json:"-"             validate:"required"`
 	AttachmentID  int   `json:"attachment_id" validate:"required"`
 }
 
