@@ -64,6 +64,7 @@ type UpdateTransactionOptions struct {
 	Note          string   `json:"note,omitempty"`
 	Memo          string   `json:"memo,omitempty"`
 	ChequeNumber  string   `json:"cheque_number,omitempty"`
+	NeedsReview   *bool    `json:"needs_review,omitempty"`  // pointer: nil = don't update, false = mark as reviewed
 }
 
 // UpdateTransaction updates a transaction in Pocketsmith, by the given
