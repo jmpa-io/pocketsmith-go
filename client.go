@@ -24,8 +24,8 @@ type Client struct {
 	tracerName string // The name of the tracer output in the traces.
 
 	// config.
-	endpoint      string   // The endpoint to query against.
-	httpClient    HTTPDoer // The http client used when sending / receiving data from the endpoint.
+	endpoint      string      // The endpoint to query against.
+	httpClient    HTTPDoer    // The http client used when sending / receiving data from the endpoint.
 	headers       http.Header // The headers passed to the http client when sending / receiving data from the endpoint.
 	skipAuthCheck bool        // Skip the GetAuthedUser call on startup (useful when API is unreachable).
 

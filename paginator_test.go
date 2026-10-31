@@ -325,8 +325,8 @@ func Test_parsePaginationHeaders(t *testing.T) {
 
 func Test_cloneSenderRequest(t *testing.T) {
 	tests := map[string]struct {
-		sr      senderRequest
-		pageNum int
+		sr       senderRequest
+		pageNum  int
 		wantPage string
 	}{
 		"injects page into empty queries": {
