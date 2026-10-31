@@ -91,7 +91,7 @@ func (c *Client) ListTransactionAccounts(ctx context.Context) (TransactionAccoun
 type CreateTransactionAccountTransactionOptions struct {
 	TransactionAccountID int     `json:"-"                       validate:"required"`
 	Payee                string  `json:"payee"                   validate:"required"`
-	Amount               float64 `json:"amount"` // no validate:"required" — 0.00 is a valid amount
+	Amount               float64 `json:"amount"`                                      // no validate:"required" — 0.00 is a valid amount
 	Date                 string  `json:"date"                    validate:"required"` //TODO: should this be customTime?
 	IsTransfer           bool    `json:"is_transfer,omitempty"`
 	Labels               string  `json:"labels,omitempty"` // must be comma seperated. // TODO: should this be a []string or a custom type?
