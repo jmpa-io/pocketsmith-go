@@ -17,10 +17,10 @@ var tdAccounts = newTestdata("accounts")
 // customTime fields (forecast_start_date, forecast_end_date) require YYYY-MM-DD
 // format — using a raw map avoids the zero-time marshalling issue.
 var userJSON, _ = json.Marshal(map[string]any{
-	"id":                   1,
-	"login":                "testuser",
-	"forecast_start_date":  "2026-01-01",
-	"forecast_end_date":    "2026-12-31",
+	"id":                  1,
+	"login":               "testuser",
+	"forecast_start_date": "2026-01-01",
+	"forecast_end_date":   "2026-12-31",
 })
 
 // newMethodClient creates a pocketsmith Client whose HTTP transport answers the

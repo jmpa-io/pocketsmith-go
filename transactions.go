@@ -48,23 +48,24 @@ func (c *Client) GetTransaction(
 	}
 	return transaction, nil
 }
+
 // Pocketsmith, by the given transaction id.
 // Pointer fields are used for values where zero is a valid update
 // (e.g. Amount=0.00, CategoryID=0 to un-assign, IsTransfer=false to un-mark).
 // Nil pointer means "do not update this field".
 type UpdateTransactionOptions struct {
 	TransactionID int64    `json:"-"                       validate:"required"`
-	Labels        string   `json:"labels,omitempty"`        // comma-separated list; use ClearLabels=true to first clear all existing labels
-	ClearLabels   bool     `json:"-"`                       // if true, send labels="" before setting Labels (avoids Pocketsmith dormant-record bug)
+	Labels        string   `json:"labels,omitempty"` // comma-separated list; use ClearLabels=true to first clear all existing labels
+	ClearLabels   bool     `json:"-"`                // if true, send labels="" before setting Labels (avoids Pocketsmith dormant-record bug)
 	Payee         string   `json:"payee,omitempty"`
-	Amount        *float64 `json:"amount,omitempty"`        // pointer: nil = don't update, 0.00 = valid
+	Amount        *float64 `json:"amount,omitempty"` // pointer: nil = don't update, 0.00 = valid
 	Date          string   `json:"date,omitempty"`
-	IsTransfer    *bool    `json:"is_transfer,omitempty"`   // pointer: nil = don't update, false = un-mark
-	CategoryID    *int32   `json:"category_id,omitempty"`   // pointer: nil = don't update, 0 = un-assign
+	IsTransfer    *bool    `json:"is_transfer,omitempty"` // pointer: nil = don't update, false = un-mark
+	CategoryID    *int32   `json:"category_id,omitempty"` // pointer: nil = don't update, 0 = un-assign
 	Note          string   `json:"note,omitempty"`
 	Memo          string   `json:"memo,omitempty"`
 	ChequeNumber  string   `json:"cheque_number,omitempty"`
-	NeedsReview   *bool    `json:"needs_review,omitempty"`  // pointer: nil = don't update, false = mark as reviewed
+	NeedsReview   *bool    `json:"needs_review,omitempty"` // pointer: nil = don't update, false = mark as reviewed
 }
 
 // UpdateTransaction updates a transaction in Pocketsmith, by the given

@@ -11,21 +11,21 @@ import (
 
 // Event defines a Pocketsmith forecast event (budget entry).
 type Event struct {
-	ID               string   `json:"id"`
-	SeriesID         int64    `json:"series_id"`
-	SeriesStartID    string   `json:"series_start_id"`
-	Category         Category `json:"category"`
-	Scenario         Scenario `json:"scenario"`
-	Amount           float64  `json:"amount"`
-	AmountInBase     float64  `json:"amount_in_base_currency"`
-	CurrencyCode     string   `json:"currency_code"`
-	Date             string   `json:"date"`
-	Colour           string   `json:"colour"`
-	Note             string   `json:"note"`
-	RepeatType       string   `json:"repeat_type"`
-	RepeatInterval   int      `json:"repeat_interval"`
-	InfiniteSeries   bool     `json:"infinite_series"`
-	IsTransfer       bool     `json:"is_transfer"`
+	ID             string   `json:"id"`
+	SeriesID       int64    `json:"series_id"`
+	SeriesStartID  string   `json:"series_start_id"`
+	Category       Category `json:"category"`
+	Scenario       Scenario `json:"scenario"`
+	Amount         float64  `json:"amount"`
+	AmountInBase   float64  `json:"amount_in_base_currency"`
+	CurrencyCode   string   `json:"currency_code"`
+	Date           string   `json:"date"`
+	Colour         string   `json:"colour"`
+	Note           string   `json:"note"`
+	RepeatType     string   `json:"repeat_type"`
+	RepeatInterval int      `json:"repeat_interval"`
+	InfiniteSeries bool     `json:"infinite_series"`
+	IsTransfer     bool     `json:"is_transfer"`
 }
 
 // Events represents a slice of Event.
@@ -114,10 +114,10 @@ func (c *Client) ListEvents(ctx context.Context, options *ListEventsOptions) (Ev
 type CreateEventOptions struct {
 	ScenarioID     int     `json:"-"                validate:"required"`
 	CategoryID     int32   `json:"category_id"      validate:"required"`
-	Amount         float64 `json:"amount"` // no validate:"required" — 0.00 is a valid amount; negative = expense, positive = income
+	Amount         float64 `json:"amount"`                               // no validate:"required" — 0.00 is a valid amount; negative = expense, positive = income
 	Date           string  `json:"date"             validate:"required"` // YYYY-MM-DD, start date of the series
-	RepeatType     string  `json:"repeat_type"`     // once, daily, weekly, fortnightly, monthly, yearly
-	RepeatInterval int     `json:"repeat_interval"` // e.g. 1 for every month
+	RepeatType     string  `json:"repeat_type"`                          // once, daily, weekly, fortnightly, monthly, yearly
+	RepeatInterval int     `json:"repeat_interval"`                      // e.g. 1 for every month
 	InfiniteSeries bool    `json:"infinite_series"`
 	Note           string  `json:"note,omitempty"`
 	Colour         string  `json:"colour,omitempty"`
@@ -292,16 +292,16 @@ type BudgetPeriod struct {
 
 // BudgetEntry defines the budget data for a single category direction (expense or income).
 type BudgetEntry struct {
-	StartDate            string         `json:"start_date"`
-	EndDate              string         `json:"end_date"`
-	CurrencyCode         string         `json:"currency_code"`
-	TotalActualAmount    float64        `json:"total_actual_amount"`
-	AverageActualAmount  float64        `json:"average_actual_amount"`
-	TotalForecastAmount  float64        `json:"total_forecast_amount"`
-	AverageForecastAmount float64       `json:"average_forecast_amount"`
-	TotalUnderBy         float64        `json:"total_under_by"`
-	TotalOverBy          float64        `json:"total_over_by"`
-	Periods              []BudgetPeriod `json:"periods"`
+	StartDate             string         `json:"start_date"`
+	EndDate               string         `json:"end_date"`
+	CurrencyCode          string         `json:"currency_code"`
+	TotalActualAmount     float64        `json:"total_actual_amount"`
+	AverageActualAmount   float64        `json:"average_actual_amount"`
+	TotalForecastAmount   float64        `json:"total_forecast_amount"`
+	AverageForecastAmount float64        `json:"average_forecast_amount"`
+	TotalUnderBy          float64        `json:"total_under_by"`
+	TotalOverBy           float64        `json:"total_over_by"`
+	Periods               []BudgetPeriod `json:"periods"`
 }
 
 // BudgetItem defines a single category's budget (expense and/or income).

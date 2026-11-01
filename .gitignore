@@ -16,3 +16,6 @@ traces.txt
 
 # ignore compiled binaries in root.
 /main
+
+# ignore audit notes.
+NOTES.md
